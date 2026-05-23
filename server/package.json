@@ -1,0 +1,28 @@
+{
+  "name": "server",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.0.0",
+    "@supabase/supabase-js": "^2.46.1",
+    "firebase-admin": "^13.0.1",
+    "next": "^15.0.3",
+    "react": "^19.0.0-rc-6230622812-20241010",
+    "react-dom": "^19.0.0-rc-6230622812-20241010",
+    "resend": "^4.0.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.6",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "prisma": "^6.0.0",
+    "typescript": "^5.6.3"
+  }
+}

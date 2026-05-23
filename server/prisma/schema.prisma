@@ -1,0 +1,87 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  HOD
+  FACULTY
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model Department {
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique
+  code      String     @unique // e.g. "CS", "MATH"
+  users     User[]
+  deadlines Deadline[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@map("departments")
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  email         String         @unique
+  fullName      String         @map("full_name")
+  role          Role           @default(FACULTY)
+  departmentId  String         @db.Uuid @map("department_id")
+  department    Department     @relation(fields: [departmentId], references: [id])
+  deadlines     Deadline[]     @relation("CreatedDeadlines")
+  notifications Notification[]
+  pushTokens    PushToken[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Deadline {
+  id           String      @id @default(uuid()) @db.Uuid
+  title        String
+  description  String
+  dueDate      DateTime    @map("due_date")
+  priority     Priority    @default(MEDIUM)
+  createdById  String      @db.Uuid @map("created_by")
+  createdBy    User        @relation("CreatedDeadlines", fields: [createdById], references: [id], onDelete: Cascade)
+  departmentId String      @db.Uuid @map("department_id")
+  department   Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  createdAt    DateTime    @default(now()) @map("created_at")
+  updatedAt    DateTime    @updatedAt @map("updated_at")
+
+  @@map("deadlines")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  isRead    Boolean  @default(false) @map("is_read")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+model PushToken {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @db.Uuid @map("user_id")
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fcmToken   String   @unique @map("fcm_token")
+  deviceType String   @map("device_type")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("push_tokens")
+}
