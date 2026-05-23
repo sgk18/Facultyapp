@@ -10,6 +10,9 @@ export class NotificationService {
   static async getNotificationsForUser(userId: string) {
     return prisma.notification.findMany({
       where: { userId },
+      include: {
+        relatedDeadline: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -57,8 +60,20 @@ export class NotificationService {
     dueDateStr: string;
     description: string;
     excludeUserId?: string;
+    type?: string;
+    relatedDeadlineId?: string;
   }) {
-    const { departmentId, title, body, deadlineTitle, dueDateStr, description, excludeUserId } = params;
+    const {
+      departmentId,
+      title,
+      body,
+      deadlineTitle,
+      dueDateStr,
+      description,
+      excludeUserId,
+      type = 'DEADLINE',
+      relatedDeadlineId,
+    } = params;
 
     // Find all users in the department
     const targetUsers = await prisma.user.findMany({
@@ -78,6 +93,8 @@ export class NotificationService {
             userId: user.id,
             title,
             body,
+            type,
+            relatedDeadlineId,
           },
         });
 
@@ -89,8 +106,9 @@ export class NotificationService {
         if (userPushTokens.length > 0) {
           const tokens = userPushTokens.map((t) => t.fcmToken);
           await FirebaseService.broadcastPush(tokens, title, body, {
-            type: 'deadline',
+            type,
             deadlineTitle,
+            relatedDeadlineId: relatedDeadlineId || '',
           });
         }
 

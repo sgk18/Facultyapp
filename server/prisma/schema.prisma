@@ -32,56 +32,63 @@ model Department {
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
-  email         String         @unique
-  fullName      String         @map("full_name")
-  role          Role           @default(FACULTY)
-  departmentId  String         @db.Uuid @map("department_id")
-  department    Department     @relation(fields: [departmentId], references: [id])
-  deadlines     Deadline[]     @relation("CreatedDeadlines")
+  id           String         @id @default(uuid()) @db.Uuid
+  authUserId   String?        @unique @db.Uuid @map("auth_user_id")
+  email        String         @unique
+  fullName     String         @map("full_name")
+  role         Role           @default(FACULTY)
+  departmentId String         @db.Uuid @map("department_id")
+  department   Department     @relation(fields: [departmentId], references: [id])
+  avatarUrl    String?        @map("avatar_url")
+  deadlines    Deadline[]     @relation("CreatedDeadlines")
   notifications Notification[]
-  pushTokens    PushToken[]
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  pushTokens   PushToken[]
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
 
   @@map("users")
 }
 
 model Deadline {
-  id           String      @id @default(uuid()) @db.Uuid
+  id           String         @id @default(uuid()) @db.Uuid
   title        String
   description  String
-  dueDate      DateTime    @map("due_date")
-  priority     Priority    @default(MEDIUM)
-  createdById  String      @db.Uuid @map("created_by")
-  createdBy    User        @relation("CreatedDeadlines", fields: [createdById], references: [id], onDelete: Cascade)
-  departmentId String      @db.Uuid @map("department_id")
-  department   Department  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  createdAt    DateTime    @default(now()) @map("created_at")
-  updatedAt    DateTime    @updatedAt @map("updated_at")
+  dueDate      DateTime       @map("due_date")
+  priority     Priority       @default(MEDIUM)
+  createdById  String         @db.Uuid @map("created_by")
+  createdBy    User           @relation("CreatedDeadlines", fields: [createdById], references: [id], onDelete: Cascade)
+  departmentId String         @db.Uuid @map("department_id")
+  department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isCompleted  Boolean        @default(false) @map("is_completed")
+  notifications Notification[]
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
 
   @@map("deadlines")
 }
 
 model Notification {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  body      String
-  isRead    Boolean  @default(false) @map("is_read")
-  createdAt DateTime @default(now()) @map("created_at")
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @db.Uuid @map("user_id")
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title             String
+  body              String
+  type              String    @default("DEADLINE")
+  isRead            Boolean   @default(false) @map("is_read")
+  relatedDeadlineId String?   @db.Uuid @map("related_deadline_id")
+  relatedDeadline   Deadline? @relation(fields: [relatedDeadlineId], references: [id], onDelete: SetNull)
+  createdAt         DateTime  @default(now()) @map("created_at")
 
   @@map("notifications")
 }
 
 model PushToken {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @db.Uuid @map("user_id")
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fcmToken   String   @unique @map("fcm_token")
-  deviceType String   @map("device_type")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fcmToken  String   @unique @map("fcm_token")
+  platform  String   @map("platform")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("push_tokens")
 }

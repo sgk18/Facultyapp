@@ -92,6 +92,7 @@ export class DeadlineService {
         priority: input.priority,
         departmentId: input.departmentId,
         createdById: user.id,
+        isCompleted: input.isCompleted ?? false,
       },
       include: {
         createdBy: true,
@@ -118,6 +119,8 @@ export class DeadlineService {
       dueDateStr: formattedDate,
       description: deadline.description,
       excludeUserId: user.id,
+      type: 'DEADLINE',
+      relatedDeadlineId: deadline.id,
     });
 
     return deadline;
@@ -164,6 +167,7 @@ export class DeadlineService {
     if (input.dueDate !== undefined) updateData.dueDate = new Date(input.dueDate);
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.departmentId !== undefined) updateData.departmentId = input.departmentId;
+    if (input.isCompleted !== undefined) updateData.isCompleted = input.isCompleted;
 
     const updatedDeadline = await prisma.deadline.update({
       where: { id },
@@ -193,6 +197,8 @@ export class DeadlineService {
       dueDateStr: formattedDate,
       description: updatedDeadline.description,
       excludeUserId: user.id,
+      type: 'DEADLINE',
+      relatedDeadlineId: updatedDeadline.id,
     });
 
     return updatedDeadline;

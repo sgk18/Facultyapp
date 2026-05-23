@@ -43,7 +43,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const token = await UserService.registerPushToken(
     user.id,
     result.data.fcmToken,
-    result.data.deviceType
+    result.data.platform
   );
   return sendSuccess(token, 'Push token registered successfully');
 });

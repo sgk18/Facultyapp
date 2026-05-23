@@ -20,11 +20,17 @@ export class UserService {
   }
 
   /**
-   * Updates internal user profile details (e.g. name, role, department)
+   * Updates internal user profile details (e.g. name, role, department, avatar, auth link)
    */
   static async updateProfile(
     userId: string,
-    data: { fullName?: string; departmentId?: string; role?: Role }
+    data: {
+      fullName?: string;
+      departmentId?: string;
+      role?: Role;
+      avatarUrl?: string | null;
+      authUserId?: string | null;
+    }
   ) {
     // Verify department exists if departmentId is being updated
     if (data.departmentId) {
@@ -51,7 +57,7 @@ export class UserService {
   static async registerPushToken(
     userId: string,
     fcmToken: string,
-    deviceType: string
+    platform: string
   ) {
     // Confirm the user exists first
     const userExists = await prisma.user.findUnique({ where: { id: userId } });
@@ -63,12 +69,12 @@ export class UserService {
       where: { fcmToken },
       update: {
         userId,
-        deviceType,
+        platform,
       },
       create: {
         userId,
         fcmToken,
-        deviceType,
+        platform,
       },
     });
 
