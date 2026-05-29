@@ -48,12 +48,16 @@ export class AuthService {
           .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
           .join(' ');
 
+        // Bootstrapping: Assign ADMIN role if it's the first user or the email contains "admin"
+        const existingUsersCount = await prisma.user.count();
+        const role = (existingUsersCount === 0 || normalizedEmail.includes('admin')) ? 'ADMIN' : 'FACULTY';
+
         dbUser = await prisma.user.create({
           data: {
             email: normalizedEmail,
             passwordHash,
             fullName: fullName || 'New Faculty Member',
-            role: 'FACULTY',
+            role,
             departmentId: department.id,
           },
           include: { department: true },

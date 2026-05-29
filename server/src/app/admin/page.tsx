@@ -21,64 +21,88 @@ interface User {
 export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [token, setToken] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
-  const [isMockMode, setIsMockMode] = useState(true);
 
-  // Fallback Mock data for visual wow and easy testing
-  const mockUsers: User[] = [
-    {
-      id: '1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d',
-      fullName: 'Dr. Joseph Varghese',
-      email: 'joseph.varghese@christuniversity.in',
-      role: 'HOD',
-      department: { id: 'd1', name: 'Computer Science Department', code: 'CS' },
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      createdAt: '2026-05-15T09:00:00Z',
-    },
-    {
-      id: '2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e',
-      fullName: 'Prof. Mary D\'Souza',
-      email: 'mary.dsouza@christuniversity.in',
-      role: 'FACULTY',
-      department: { id: 'd1', name: 'Computer Science Department', code: 'CS' },
-      avatarUrl: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
-      createdAt: '2026-05-18T10:30:00Z',
-    },
-    {
-      id: '3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f',
-      fullName: 'Dr. Anil K. Sharma',
-      email: 'anil.sharma@christuniversity.in',
-      role: 'FACULTY',
-      department: { id: 'd2', name: 'Mathematics Department', code: 'MATH' },
-      createdAt: '2026-05-20T11:15:00Z',
-    },
-    {
-      id: '4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a',
-      fullName: 'Prof. John Peterson',
-      email: 'john.peterson@christuniversity.in',
-      role: 'ADMIN',
-      department: { id: 'd1', name: 'Computer Science Department', code: 'CS' },
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      createdAt: '2026-05-10T08:00:00Z',
-    },
-  ];
+  // Search & Filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState('ALL');
 
-  // Load initial data
+  // Login Form state
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Check auth state on mount
   useEffect(() => {
-    if (isMockMode) {
-      setUsers(mockUsers);
-    } else {
+    const savedToken = localStorage.getItem('admin_token');
+    if (savedToken) {
+      setToken(savedToken);
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // Fetch users when token/authentication changes
+  useEffect(() => {
+    if (isAuthenticated && token) {
       fetchUsers();
     }
-  }, [isMockMode]);
+  }, [isAuthenticated, token]);
 
-  // Fetch users from server using bearer token
-  const fetchUsers = async () => {
-    if (!token) {
-      showMsg('Please provide a Bearer Token first', 'error');
+  const showMsg = (text: string, type: 'success' | 'error') => {
+    setMessage({ text, type });
+    setTimeout(() => setMessage({ text: '', type: '' }), 5000);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      showMsg('Please fill in all fields', 'error');
       return;
     }
+
+    setLoginLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        showMsg(data.error || 'Login failed. Please verify credentials.', 'error');
+        return;
+      }
+
+      const { accessToken, user } = data.data;
+
+      if (user.role !== 'ADMIN') {
+        showMsg('Access denied. Administrator privileges required.', 'error');
+        return;
+      }
+
+      localStorage.setItem('admin_token', accessToken);
+      setToken(accessToken);
+      setIsAuthenticated(true);
+      showMsg('Welcome back, Admin!', 'success');
+    } catch (err: any) {
+      showMsg(err.message || 'Connection error', 'error');
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('admin_token');
+    setToken('');
+    setIsAuthenticated(false);
+    setUsers([]);
+    showMsg('Logged out successfully', 'success');
+  };
+
+  const fetchUsers = async () => {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/users', {
@@ -87,9 +111,13 @@ export default function AdminDashboard() {
       const payload = await res.json();
       if (payload.success) {
         setUsers(payload.data);
-        showMsg('Users loaded successfully', 'success');
       } else {
-        showMsg(payload.error || 'Failed to fetch users', 'error');
+        if (res.status === 401) {
+          handleLogout();
+          showMsg('Session expired. Please log in again.', 'error');
+        } else {
+          showMsg(payload.error || 'Failed to fetch users', 'error');
+        }
       }
     } catch (err: any) {
       showMsg(err.message || 'API fetch error', 'error');
@@ -98,83 +126,254 @@ export default function AdminDashboard() {
     }
   };
 
-  const showMsg = (text: string, type: 'success' | 'error') => {
-    setMessage({ text, type });
-    setTimeout(() => setMessage({ text: '', type: '' }), 5000);
-  };
-
-  // Promote Faculty to HOD
   const promoteUser = async (userId: string) => {
-    if (isMockMode) {
-      setUsers(prev =>
-        prev.map(u => (u.id === userId ? { ...u, role: 'HOD' } : u))
-      );
-      showMsg('Mock Promotion Successful!', 'success');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/promote-hod', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
-        showMsg(payload.message || 'Promotion successful', 'success');
-        fetchUsers();
-      } else {
-        showMsg(payload.error || 'Failed to promote', 'error');
+    if (confirm('Are you sure you want to promote this user to HOD?')) {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/admin/promote-hod', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId }),
+        });
+        const payload = await res.json();
+        if (payload.success) {
+          showMsg(payload.message || 'Promotion successful', 'success');
+          fetchUsers();
+        } else {
+          showMsg(payload.error || 'Failed to promote', 'error');
+        }
+      } catch (err: any) {
+        showMsg(err.message || 'Promotion failed', 'error');
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      showMsg(err.message || 'Promotion failed', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
-  // Demote HOD to Faculty
   const demoteUser = async (userId: string) => {
-    if (isMockMode) {
-      setUsers(prev =>
-        prev.map(u => (u.id === userId ? { ...u, role: 'FACULTY' } : u))
-      );
-      showMsg('Mock Demotion Successful!', 'success');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const res = await fetch('/api/admin/demote-hod', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId }),
-      });
-      const payload = await res.json();
-      if (payload.success) {
-        showMsg(payload.message || 'Demotion successful', 'success');
-        fetchUsers();
-      } else {
-        showMsg(payload.error || 'Failed to demote', 'error');
+    if (confirm('Are you sure you want to demote this HOD to Faculty?')) {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/admin/demote-hod', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ userId }),
+        });
+        const payload = await res.json();
+        if (payload.success) {
+          showMsg(payload.message || 'Demotion successful', 'success');
+          fetchUsers();
+        } else {
+          showMsg(payload.error || 'Failed to demote', 'error');
+        }
+      } catch (err: any) {
+        showMsg(err.message || 'Demotion failed', 'error');
+      } finally {
+        setLoading(false);
       }
-    } catch (err: any) {
-      showMsg(err.message || 'Demotion failed', 'error');
-    } finally {
-      setLoading(false);
     }
   };
+
+  // Filtered list
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
+      u.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = roleFilter === 'ALL' || u.role === roleFilter;
+    return matchesSearch && matchesRole;
+  });
 
   // Calculate statistics
   const totalUsers = users.length;
-  const hodCount = users.filter(u => u.role === 'HOD').length;
-  const facultyCount = users.filter(u => u.role === 'FACULTY').length;
+  const hodCount = users.filter((u) => u.role === 'HOD').length;
+  const facultyCount = users.filter((u) => u.role === 'FACULTY').length;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="login-container">
+        <style jsx global>{`
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+          body {
+            margin: 0;
+            background-color: #f3f8fc;
+            font-family: 'Outfit', sans-serif;
+            color: #1e293b;
+          }
+
+          .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 50%, #ffffff 100%);
+          }
+
+          .login-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.1);
+            text-align: center;
+            animation: fadeIn 0.5s ease-out;
+          }
+
+          .logo {
+            width: 54px;
+            height: 54px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 auto 20px auto;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+          }
+
+          h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #1e3a8a;
+          }
+
+          p.tagline {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin: 0 0 32px 0;
+          }
+
+          .form-group {
+            text-align: left;
+            margin-bottom: 20px;
+          }
+
+          .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #1e3a8a;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+
+          .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 1.5px solid #dbeafe;
+            background-color: white;
+            color: #0f172a;
+            font-size: 0.95rem;
+            outline: none;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+          }
+
+          .form-group input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+          }
+
+          .btn-login {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+            transition: all 0.2s ease;
+            margin-top: 10px;
+          }
+
+          .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+          }
+
+          .toast {
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-align: left;
+            animation: slideIn 0.3s ease;
+          }
+
+          .toast-error {
+            background-color: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
+          }
+
+          .toast-success {
+            background-color: #f0fdf4;
+            color: #22c55e;
+            border: 1px solid #dcfce7;
+          }
+
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+        `}</style>
+
+        <div className="login-card">
+          <div className="logo">C</div>
+          <h2>CHRIST Faculty Hub</h2>
+          <p className="tagline">Admin Control & Security Portal</p>
+
+          {message.text && (
+            <div className={`toast toast-${message.type}`}>{message.text}</div>
+          )}
+
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label>Administrator Email</label>
+              <input
+                type="email"
+                placeholder="admin@christuniversity.in"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <button className="btn-login" type="submit" disabled={loginLoading}>
+              {loginLoading ? 'Authenticating Admin...' : 'Secure Log In'}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-container">
@@ -184,15 +383,16 @@ export default function AdminDashboard() {
 
         body {
           margin: 0;
-          background-color: #0f172a;
+          background-color: #f8fafc;
           font-family: 'Outfit', sans-serif;
-          color: #f8fafc;
+          color: #334155;
         }
 
         .admin-container {
           max-width: 1200px;
           margin: 0 auto;
           padding: 40px 20px;
+          animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         header {
@@ -200,88 +400,39 @@ export default function AdminDashboard() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 40px;
-          border-bottom: 1px solid #1e293b;
-          padding-bottom: 20px;
+          background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+          padding: 24px 32px;
+          border-radius: 20px;
+          box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15);
+          color: white;
         }
 
         .logo-section h1 {
-          font-size: 1.8rem;
+          font-size: 1.6rem;
           font-weight: 700;
           margin: 0;
-          background: linear-gradient(135deg, #60a5fa, #2563eb);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
         }
 
         .logo-section p {
-          color: #94a3b8;
-          font-size: 0.9rem;
+          color: #bfdbfe;
+          font-size: 0.85rem;
           margin: 4px 0 0 0;
         }
 
-        .controls {
-          display: flex;
-          align-items: center;
-          gap: 15px;
-        }
-
-        .mode-toggle {
-          background-color: #1e293b;
-          border: 1px solid #334155;
-          color: #f8fafc;
-          padding: 8px 16px;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-          font-size: 0.85rem;
-          transition: all 0.2s ease;
-        }
-
-        .mode-toggle:hover {
-          background-color: #334155;
-          border-color: #475569;
-        }
-
-        .mode-toggle.active {
-          background: linear-gradient(135deg, #2563eb, #1e40af);
-          border-color: #3b82f6;
-        }
-
-        .token-input {
-          background-color: #1e293b;
-          border: 1px solid #334155;
-          color: #f8fafc;
-          padding: 8px 12px;
-          border-radius: 8px;
-          outline: none;
-          font-size: 0.85rem;
-          width: 250px;
-          transition: border-color 0.2s;
-        }
-
-        .token-input:focus {
-          border-color: #3b82f6;
-        }
-
-        .btn-sync {
-          background-color: #2563eb;
+        .btn-logout {
+          background-color: rgba(255, 255, 255, 0.1);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           color: white;
-          border: none;
-          padding: 8px 16px;
+          padding: 8px 18px;
           border-radius: 8px;
-          font-weight: 500;
           cursor: pointer;
+          font-weight: 600;
           font-size: 0.85rem;
-          transition: transform 0.2s, background-color 0.2s;
+          transition: all 0.2s;
         }
 
-        .btn-sync:hover {
-          background-color: #1d4ed8;
-          transform: translateY(-1px);
-        }
-
-        .btn-sync:active {
-          transform: translateY(0);
+        .btn-logout:hover {
+          background-color: rgba(255, 255, 255, 0.2);
         }
 
         .stats-grid {
@@ -292,20 +443,21 @@ export default function AdminDashboard() {
         }
 
         .stat-card {
-          background: rgba(30, 41, 59, 0.4);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: white;
+          border: 1px solid #e2e8f0;
           border-radius: 16px;
           padding: 24px;
           display: flex;
           align-items: center;
           gap: 20px;
-          transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.3s;
+          box-shadow: 0 4px 15px rgba(148, 163, 184, 0.05);
+          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
         }
 
         .stat-card:hover {
           transform: translateY(-4px);
-          border-color: rgba(96, 165, 250, 0.2);
+          border-color: #bfdbfe;
+          box-shadow: 0 8px 25px rgba(37, 99, 235, 0.08);
         }
 
         .stat-icon {
@@ -319,60 +471,107 @@ export default function AdminDashboard() {
         }
 
         .blue-icon {
-          background: rgba(37, 99, 235, 0.15);
-          color: #60a5fa;
+          background: #eff6ff;
+          color: #2563eb;
         }
 
         .indigo-icon {
-          background: rgba(99, 102, 241, 0.15);
-          color: #818cf8;
+          background: #eef2ff;
+          color: #4f46e5;
         }
 
         .cyan-icon {
-          background: rgba(6, 182, 212, 0.15);
-          color: #22d3ee;
+          background: #ecfeff;
+          color: #0891b2;
         }
 
         .stat-details h3 {
           margin: 0;
-          font-size: 2.2rem;
+          font-size: 2rem;
           font-weight: 700;
+          color: #1e3a8a;
         }
 
         .stat-details p {
           margin: 4px 0 0 0;
-          color: #94a3b8;
-          font-size: 0.9rem;
+          color: #64748b;
+          font-size: 0.85rem;
           text-transform: uppercase;
-          letter-spacing: 1px;
+          letter-spacing: 0.5px;
+          font-weight: 600;
         }
 
         .msg-toast {
           padding: 12px 20px;
-          border-radius: 8px;
+          border-radius: 10px;
           margin-bottom: 25px;
           font-weight: 500;
           animation: slideIn 0.3s ease-out;
         }
 
         .msg-success {
-          background-color: rgba(16, 185, 129, 0.15);
-          color: #34d399;
-          border: 1px solid rgba(16, 185, 129, 0.2);
+          background-color: #f0fdf4;
+          color: #15803d;
+          border: 1px solid #dcfce7;
         }
 
         .msg-error {
-          background-color: rgba(239, 68, 68, 0.15);
-          color: #f87171;
-          border: 1px solid rgba(239, 68, 68, 0.2);
+          background-color: #fef2f2;
+          color: #b91c1c;
+          border: 1px solid #fee2e2;
+        }
+
+        /* Search & Filters Controls */
+        .controls-card {
+          background: white;
+          border: 1px solid #e2e8f0;
+          border-radius: 16px;
+          padding: 20px 24px;
+          margin-bottom: 24px;
+          display: flex;
+          gap: 16px;
+          flex-wrap: wrap;
+          align-items: center;
+          box-shadow: 0 4px 15px rgba(148, 163, 184, 0.05);
+        }
+
+        .search-input {
+          flex: 1;
+          min-width: 250px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1.5px solid #e2e8f0;
+          outline: none;
+          font-size: 0.9rem;
+          transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+          border-color: #3b82f6;
+        }
+
+        .filter-select {
+          padding: 10px 14px;
+          border-radius: 8px;
+          border: 1.5px solid #e2e8f0;
+          outline: none;
+          font-size: 0.9rem;
+          background-color: white;
+          color: #334155;
+          cursor: pointer;
+          transition: border-color 0.2s;
+        }
+
+        .filter-select:focus {
+          border-color: #3b82f6;
         }
 
         .table-container {
-          background: rgba(30, 41, 59, 0.4);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(255, 255, 255, 0.05);
+          background: white;
+          border: 1px solid #e2e8f0;
           border-radius: 16px;
           overflow: hidden;
+          box-shadow: 0 4px 15px rgba(148, 163, 184, 0.05);
         }
 
         table {
@@ -382,20 +581,20 @@ export default function AdminDashboard() {
         }
 
         th {
-          background-color: rgba(15, 23, 42, 0.6);
+          background-color: #f8fafc;
           padding: 16px 24px;
           font-weight: 600;
-          color: #94a3b8;
-          font-size: 0.85rem;
+          color: #475569;
+          font-size: 0.8rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          border-bottom: 1px solid #1e293b;
+          border-bottom: 1.5px solid #e2e8f0;
         }
 
         td {
-          padding: 20px 24px;
-          border-bottom: 1px solid #1e293b;
-          font-size: 0.95rem;
+          padding: 18px 24px;
+          border-bottom: 1px solid #f1f5f9;
+          font-size: 0.9rem;
           vertical-align: middle;
         }
 
@@ -406,42 +605,43 @@ export default function AdminDashboard() {
         .faculty-profile {
           display: flex;
           align-items: center;
-          gap: 15px;
+          gap: 12px;
         }
 
         .faculty-avatar {
-          width: 44px;
-          height: 44px;
+          width: 40px;
+          height: 40px;
           border-radius: 50%;
           object-fit: cover;
-          background: linear-gradient(135deg, #2563eb, #6366f1);
+          background: linear-gradient(135deg, #3b82f6, #6366f1);
           display: flex;
           align-items: center;
           justify-content: center;
           font-weight: 600;
-          font-size: 1.1rem;
+          font-size: 0.95rem;
           color: white;
         }
 
         .faculty-info h4 {
           margin: 0;
-          font-size: 0.95rem;
+          font-size: 0.9rem;
           font-weight: 600;
+          color: #0f172a;
         }
 
         .faculty-info p {
           margin: 2px 0 0 0;
-          color: #94a3b8;
-          font-size: 0.85rem;
+          color: #64748b;
+          font-size: 0.8rem;
         }
 
         .dept-tag {
-          background-color: rgba(51, 65, 85, 0.5);
-          border: 1px solid #475569;
-          color: #cbd5e1;
+          background-color: #eff6ff;
+          border: 1px solid #bfdbfe;
+          color: #1e40af;
           padding: 4px 10px;
           border-radius: 100px;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 600;
         }
 
@@ -449,27 +649,27 @@ export default function AdminDashboard() {
           display: inline-block;
           padding: 4px 10px;
           border-radius: 6px;
-          font-size: 0.75rem;
+          font-size: 0.7rem;
           font-weight: 700;
           letter-spacing: 0.5px;
         }
 
         .role-admin {
-          background-color: rgba(239, 68, 68, 0.15);
-          color: #f87171;
-          border: 1px solid rgba(239, 68, 68, 0.2);
+          background-color: #fee2e2;
+          color: #ef4444;
+          border: 1px solid #fecaca;
         }
 
         .role-hod {
-          background-color: rgba(16, 185, 129, 0.15);
-          color: #34d399;
-          border: 1px solid rgba(16, 185, 129, 0.2);
+          background-color: #dcfce7;
+          color: #15803d;
+          border: 1px solid #bbf7d0;
         }
 
         .role-faculty {
-          background-color: rgba(59, 130, 246, 0.15);
-          color: #60a5fa;
-          border: 1px solid rgba(59, 130, 246, 0.2);
+          background-color: #eff6ff;
+          color: #1e40af;
+          border: 1px solid #bfdbfe;
         }
 
         .action-cell {
@@ -488,25 +688,25 @@ export default function AdminDashboard() {
         }
 
         .btn-promote {
-          background-color: rgba(16, 185, 129, 0.15);
-          color: #34d399;
-          border: 1px solid rgba(16, 185, 129, 0.2);
+          background-color: #f0fdf4;
+          color: #166534;
+          border: 1px solid #bbf7d0;
         }
 
         .btn-promote:hover {
-          background-color: #10b981;
-          color: #0f172a;
+          background-color: #166534;
+          color: white;
         }
 
         .btn-demote {
-          background-color: rgba(239, 68, 68, 0.15);
-          color: #f87171;
-          border: 1px solid rgba(239, 68, 68, 0.2);
+          background-color: #fef2f2;
+          color: #991b1b;
+          border: 1px solid #fecaca;
         }
 
         .btn-demote:hover {
-          background-color: #ef4444;
-          color: #0f172a;
+          background-color: #991b1b;
+          color: white;
         }
 
         @keyframes slideIn {
@@ -519,35 +719,23 @@ export default function AdminDashboard() {
             opacity: 1;
           }
         }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
       `}</style>
 
       {/* Header Bar */}
       <header>
         <div className="logo-section">
           <h1>CHRIST Faculty Hub</h1>
-          <p>Role Access & Department Control Center</p>
+          <p>Portal Security, HOD Assignments & Account Controls</p>
         </div>
-        <div className="controls">
-          <button
-            className={`mode-toggle ${isMockMode ? 'active' : ''}`}
-            onClick={() => setIsMockMode(prev => !prev)}
-          >
-            {isMockMode ? 'MOCK MODE ACTIVE' : 'SWITCH TO MOCK'}
+        <div>
+          <button className="btn-logout" onClick={handleLogout}>
+            Log Out Portal
           </button>
-          {!isMockMode && (
-            <>
-              <input
-                type="text"
-                placeholder="Paste Bearer Token"
-                className="token-input"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-              />
-              <button className="btn-sync" onClick={fetchUsers}>
-                Sync API
-              </button>
-            </>
-          )}
         </div>
       </header>
 
@@ -563,31 +751,52 @@ export default function AdminDashboard() {
         <div className="stat-card">
           <div className="stat-icon blue-icon">👥</div>
           <div className="stat-details">
-            <h3>{totalUsers}</h3>
+            <h3>{loading ? '...' : totalUsers}</h3>
             <p>Total Accounts</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon indigo-icon">👑</div>
           <div className="stat-details">
-            <h3>{hodCount}</h3>
+            <h3>{loading ? '...' : hodCount}</h3>
             <p>Active HODs</p>
           </div>
         </div>
         <div className="stat-card">
           <div className="stat-icon cyan-icon">📚</div>
           <div className="stat-details">
-            <h3>{facultyCount}</h3>
+            <h3>{loading ? '...' : facultyCount}</h3>
             <p>Faculty Members</p>
           </div>
         </div>
       </div>
 
+      {/* Search & Filter Controls */}
+      <div className="controls-card">
+        <input
+          type="text"
+          className="search-input"
+          placeholder="Search by name or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <select
+          className="filter-select"
+          value={roleFilter}
+          onChange={(e) => setRoleFilter(e.target.value)}
+        >
+          <option value="ALL">All Roles</option>
+          <option value="ADMIN">ADMIN</option>
+          <option value="HOD">HOD</option>
+          <option value="FACULTY">FACULTY</option>
+        </select>
+      </div>
+
       {/* Faculty list Table */}
       <div className="table-container">
-        {loading ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#94a3b8' }}>
-            Synchronizing data with API servers...
+        {loading && users.length === 0 ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+            Fetching direct database records...
           </div>
         ) : (
           <table>
@@ -600,7 +809,7 @@ export default function AdminDashboard() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <tr key={user.id}>
                   <td>
                     <div className="faculty-profile">
@@ -608,7 +817,7 @@ export default function AdminDashboard() {
                         <img src={user.avatarUrl} alt={user.fullName} className="faculty-avatar" />
                       ) : (
                         <div className="faculty-avatar">
-                          {user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                          {user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
                         </div>
                       )}
                       <div className="faculty-info">
@@ -644,7 +853,7 @@ export default function AdminDashboard() {
                         </button>
                       )}
                       {user.role === 'ADMIN' && (
-                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '500' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
                           Root Lock
                         </span>
                       )}
@@ -652,10 +861,10 @@ export default function AdminDashboard() {
                   </td>
                 </tr>
               ))}
-              {users.length === 0 && (
+              {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', color: '#64748b', padding: '40px' }}>
-                    No faculty members found. Set up a default token and sync to load.
+                  <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                    No faculty members matching the query were found.
                   </td>
                 </tr>
               )}
