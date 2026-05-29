@@ -72,7 +72,10 @@ export default function AdminDashboard() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        showMsg(data.error || 'Login failed. Please verify credentials.', 'error');
+        const errorMsg = data.details && data.details.length > 0 
+          ? `${data.error}: ${data.details.join(', ')}` 
+          : (data.error || 'Login failed. Please verify credentials.');
+        showMsg(errorMsg, 'error');
         return;
       }
 
