@@ -16,15 +16,17 @@ export class AuthService {
     const normalizedEmail = email.toLowerCase().trim();
 
     // 1. Query our internal database profile by email
-    let dbUser = await prisma.user.findUnique({
+    const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: { department: true },
     });
 
+    let dbUser: any;
+
     // Onboarding rule: Auto-create profile as FACULTY only if email ends with @christuniversity.in
     const isApprovedDomain = normalizedEmail.endsWith('@christuniversity.in');
 
-    if (!dbUser) {
+    if (!existingUser) {
       if (isApprovedDomain) {
         // Find or create a default department
         let department = await prisma.department.findFirst();
@@ -61,17 +63,18 @@ export class AuthService {
       }
     } else {
       // User profile exists - check password
-      if (dbUser.passwordHash) {
-        const isMatch = await bcrypt.compare(password, dbUser.passwordHash);
+      if (existingUser.passwordHash) {
+        const isMatch = await bcrypt.compare(password, existingUser.passwordHash);
         if (!isMatch) {
           throw new UnauthorizedError('Invalid email or password');
         }
+        dbUser = existingUser;
       } else {
         // User exists but has no password hash set yet (e.g. legacy/sync trigger user)
         // Store password on their first login
         const passwordHash = await bcrypt.hash(password, 10);
         dbUser = await prisma.user.update({
-          where: { id: dbUser.id },
+          where: { id: existingUser.id },
           data: { passwordHash },
           include: { department: true },
         });
