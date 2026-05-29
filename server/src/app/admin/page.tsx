@@ -749,21 +749,38 @@ export default function AdminDashboard() {
       {/* Statistics Cards Grid */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon blue-icon">👥</div>
+          <div className="stat-icon blue-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '24px', height: '24px' }}>
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </div>
           <div className="stat-details">
             <h3>{loading ? '...' : totalUsers}</h3>
             <p>Total Accounts</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon indigo-icon">👑</div>
+          <div className="stat-icon indigo-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '24px', height: '24px' }}>
+              <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z" />
+              <path d="M3 20h18" />
+            </svg>
+          </div>
           <div className="stat-details">
             <h3>{loading ? '...' : hodCount}</h3>
             <p>Active HODs</p>
           </div>
         </div>
         <div className="stat-card">
-          <div className="stat-icon cyan-icon">📚</div>
+          <div className="stat-icon cyan-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ width: '24px', height: '24px' }}>
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </div>
           <div className="stat-details">
             <h3>{loading ? '...' : facultyCount}</h3>
             <p>Faculty Members</p>
