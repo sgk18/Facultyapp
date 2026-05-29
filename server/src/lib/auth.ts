@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server';
-import { supabase } from './supabase';
 import { prisma } from './prisma';
 import { Role } from '@prisma/client';
+import jwt from 'jsonwebtoken';
+
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-key-at-least-32-chars-long';
 
 export interface AuthenticatedUser {
   id: string;
@@ -27,15 +29,20 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
   }
 
   try {
-    // 1. Verify token with Supabase Auth server
-    const { data: { user: supabaseUser }, error } = await supabase.auth.getUser(token);
-    if (error || !supabaseUser) {
+    // 1. Verify token locally
+    const decoded = jwt.verify(token, JWT_SECRET) as {
+      userId: string;
+      email: string;
+      role: Role;
+    };
+
+    if (!decoded || !decoded.userId) {
       return null;
     }
 
     // 2. Fetch corresponding internal user record including role
     const dbUser = await prisma.user.findUnique({
-      where: { id: supabaseUser.id },
+      where: { id: decoded.userId },
     });
 
     if (!dbUser) {
@@ -54,3 +61,4 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
     return null;
   }
 }
+

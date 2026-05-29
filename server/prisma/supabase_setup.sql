@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS departments (
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     auth_user_id UUID UNIQUE, -- Reference to Supabase auth.users.id
+    password_hash VARCHAR(255),
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     role role_type DEFAULT 'FACULTY'::role_type NOT NULL,
