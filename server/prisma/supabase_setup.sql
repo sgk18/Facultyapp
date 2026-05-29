@@ -191,3 +191,45 @@ CREATE POLICY "Allow users to manage own push tokens" ON push_tokens
             WHERE users.auth_user_id = auth.uid() AND users.id = user_id
         )
     );
+
+-- =========================================================================
+-- AUTOMATIC PROFILE ONBOARDING & DOMAIN RESTRICTION TRIGGER
+-- =========================================================================
+
+-- Trigger function to auto-create user profile and assign role during signup
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+DECLARE
+    default_dept_id UUID;
+BEGIN
+    -- Verify approved email domain
+    IF NEW.email LIKE '%@christuniversity.in' THEN
+        -- Find or create a default department
+        SELECT id INTO default_dept_id FROM public.departments LIMIT 1;
+        IF default_dept_id IS NULL THEN
+            INSERT INTO public.departments (name, code)
+            VALUES ('General Faculty Department', 'GEN')
+            RETURNING id INTO default_dept_id;
+        END IF;
+
+        -- Auto-create profile with FACULTY role
+        INSERT INTO public.users (id, auth_user_id, email, full_name, role, department_id, avatar_url)
+        VALUES (
+            NEW.id,
+            NEW.id,
+            NEW.email,
+            COALESCE(NEW.raw_user_meta_data->>'full_name', 'New Faculty Member'),
+            'FACULTY'::role_type,
+            default_dept_id,
+            NEW.raw_user_meta_data->>'avatar_url'
+        );
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Attach trigger to auth.users table
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+    AFTER INSERT ON auth.users
+    FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();

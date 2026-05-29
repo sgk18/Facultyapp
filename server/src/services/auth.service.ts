@@ -27,15 +27,17 @@ export class AuthService {
       include: { department: true },
     });
 
-    // Seed helper: If running locally and the user exists in Supabase but not in DB yet, auto-create it
-    if (!dbUser) {
+    // Onboarding rule: Auto-create profile as FACULTY only if email ends with @christuniversity.in
+    const isApprovedDomain = email.toLowerCase().endsWith('@christuniversity.in');
+
+    if (!dbUser && isApprovedDomain) {
       // Find or create a default department
       let department = await prisma.department.findFirst();
       if (!department) {
         department = await prisma.department.create({
           data: {
-            name: 'Computer Science Department',
-            code: 'CS',
+            name: 'General Faculty Department',
+            code: 'GEN',
           },
         });
       }
@@ -43,13 +45,19 @@ export class AuthService {
       dbUser = await prisma.user.create({
         data: {
           id: data.user.id,
+          authUserId: data.user.id,
           email: data.user.email || email,
-          fullName: 'New Faculty Member',
+          fullName: data.user.user_metadata?.full_name || 'New Faculty Member',
           role: 'FACULTY',
           departmentId: department.id,
         },
         include: { department: true },
       });
+    }
+
+    // If profile still doesn't exist, reject access
+    if (!dbUser) {
+      throw new UnauthorizedError('Access restricted. Your account is not approved.');
     }
 
     return {
