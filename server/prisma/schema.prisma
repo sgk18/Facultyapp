@@ -32,20 +32,26 @@ model Department {
 }
 
 model User {
-  id           String         @id @default(uuid()) @db.Uuid
-  authUserId   String?        @unique @db.Uuid @map("auth_user_id")
-  email        String         @unique
-  passwordHash String?        @map("password_hash")
-  fullName     String         @map("full_name")
-  role         Role           @default(FACULTY)
-  departmentId String         @db.Uuid @map("department_id")
-  department   Department     @relation(fields: [departmentId], references: [id])
-  avatarUrl    String?        @map("avatar_url")
-  deadlines    Deadline[]     @relation("CreatedDeadlines")
+  id            String         @id @default(uuid()) @db.Uuid
+  authUserId    String?        @unique @db.Uuid @map("auth_user_id")
+  email         String         @unique
+  passwordHash  String?        @map("password_hash")
+  fullName      String         @map("full_name")
+  employeeId    String?        @map("employee_id")
+  role          Role           @default(FACULTY)
+  isSuspended   Boolean        @default(false) @map("is_suspended")
+  departmentId  String         @db.Uuid @map("department_id")
+  department    Department     @relation(fields: [departmentId], references: [id])
+  avatarUrl     String?        @map("avatar_url")
+  deadlines     Deadline[]     @relation("CreatedDeadlines")
   notifications Notification[]
-  pushTokens   PushToken[]
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
+  pushTokens    PushToken[]
+  googleAccount GoogleAccount?
+  calendarEvents CalendarEvent[]
+  reminders     Reminder[]
+  auditLogs     AuditLog[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
 
   @@map("users")
 }
@@ -92,4 +98,59 @@ model PushToken {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("push_tokens")
+}
+
+model GoogleAccount {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @unique @db.Uuid @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleId     String   @unique @map("google_id")
+  accessToken  String   @map("access_token")
+  refreshToken String?  @map("refresh_token")
+  syncGmail    Boolean  @default(false) @map("sync_gmail")
+  syncCalendar Boolean  @default(false) @map("sync_calendar")
+  connectedAt  DateTime @default(now()) @map("connected_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("google_accounts")
+}
+
+model CalendarEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleEventId String?  @unique @map("google_event_id")
+  title         String
+  startTime     DateTime @map("start_time")
+  endTime       DateTime @map("end_time")
+  source        String   @default("APP") // "APP" or "GOOGLE"
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("calendar_events")
+}
+
+model Reminder {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid @map("user_id")
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?
+  reminderTime DateTime @map("reminder_time")
+  status       String   @default("PENDING") // "PENDING", "SENT", "DISMISSED"
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("reminders")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  adminId    String   @db.Uuid @map("admin_id")
+  admin      User     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  action     String   // e.g. "PROMOTE_HOD", "DEMOTE_HOD", "SUSPEND_USER"
+  targetUser String?  @map("target_user") // Target user email or name
+  timestamp  DateTime @default(now()) @map("timestamp")
+
+  @@map("audit_logs")
 }
