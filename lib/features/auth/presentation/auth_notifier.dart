@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/network/api_client.dart';
@@ -42,6 +43,7 @@ class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
 
   AuthNotifier(this._ref) : super(AuthState()) {
     _loadSession();
+    _listenToAuthChanges();
   }
 
   Future<void> _loadSession() async {
@@ -66,23 +68,34 @@ class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> login(String email, String password) async {
+  void _listenToAuthChanges() {
+    Supabase.instance.client.auth.onAuthStateChange.listen((data) async {
+      final session = data.session;
+      if (session != null) {
+        final token = session.accessToken;
+        await _onboardToken(token);
+      } else {
+        // Suppress initial empty notifications during loading to avoid redirect loops
+        if (state.token != null) {
+          await logout();
+        }
+      }
+    });
+  }
+
+  Future<bool> _onboardToken(String token) async {
     state = state.copyWith(errorMessage: null);
     try {
-      final response = await _ref.read(dioProvider).post(
-        '/auth/login',
-        data: {
-          'email': email,
-          'password': password,
-        },
-      );
-
-      final token = response.data['accessToken'] as String;
-      final userMap = response.data['user'] as Map<String, dynamic>;
-      final user = UserModel.fromJson(userMap);
-
       final secureStorage = _ref.read(secureStorageProvider);
       await secureStorage.write(key: AppConstants.tokenKey, value: token);
+
+      final response = await _ref.read(dioProvider).post(
+        '/auth/onboard',
+      );
+
+      final userMap = response.data['data'] as Map<String, dynamic>;
+      final user = UserModel.fromJson(userMap);
+
       await secureStorage.write(key: AppConstants.userKey, value: jsonEncode(userMap));
 
       state = AuthState(
@@ -93,14 +106,28 @@ class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
       notifyListeners();
       return true;
     } on DioException catch (e) {
-      final message = e.response?.data['message'] ?? 'Login failed. Please try again.';
+      final message = e.response?.data['error'] ?? 'Access restricted. Authentication failed.';
       state = state.copyWith(
         errorMessage: message is List ? message.first : message.toString(),
       );
+      await Supabase.instance.client.auth.signOut();
       return false;
     } catch (e) {
-      state = state.copyWith(errorMessage: 'An unexpected error occurred.');
+      state = state.copyWith(errorMessage: 'An unexpected authentication error occurred.');
+      await Supabase.instance.client.auth.signOut();
       return false;
+    }
+  }
+
+  Future<void> signInWithGoogle() async {
+    state = state.copyWith(errorMessage: null);
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: 'facultyapp://login-callback',
+      );
+    } catch (e) {
+      state = state.copyWith(errorMessage: 'Google Sign-In failed to initialize.');
     }
   }
 
@@ -108,6 +135,11 @@ class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
     final secureStorage = _ref.read(secureStorageProvider);
     await secureStorage.delete(key: AppConstants.tokenKey);
     await secureStorage.delete(key: AppConstants.userKey);
+
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {}
+
     state = AuthState(isInitializing: false);
     notifyListeners();
   }

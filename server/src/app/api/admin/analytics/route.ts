@@ -1,15 +1,10 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandler, sendSuccess, ForbiddenError } from '@/utils/errors';
-import { requireAuth } from '@/middleware/auth.middleware';
+import { requireAdmin } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
-  const user = await requireAuth(req);
-
-  // Validate administrator privileges
-  if (user.role !== 'ADMIN') {
-    throw new ForbiddenError('Administrator privileges required');
-  }
+  const user = await requireAdmin(req);
 
   // Aggregate platform metrics
   const [

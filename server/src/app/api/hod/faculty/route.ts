@@ -1,15 +1,10 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ForbiddenError } from '@/utils/errors';
-import { requireAuth } from '@/middleware/auth.middleware';
+import { withErrorHandler, sendSuccess } from '@/utils/errors';
+import { requireHOD } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
-  const user = await requireAuth(req);
-
-  // Validate HOD or Admin permissions
-  if (user.role !== 'HOD' && user.role !== 'ADMIN') {
-    throw new ForbiddenError('HOD or Admin authorization required to access department logs');
-  }
+  const user = await requireHOD(req);
 
   // 1. Fetch department details
   const department = await prisma.department.findUnique({
@@ -26,7 +21,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       id: true,
       fullName: true,
       email: true,
-      employeeId: true,
+      employeeCode: true,
       avatarUrl: true,
       isSuspended: true,
       createdAt: true,

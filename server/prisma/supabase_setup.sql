@@ -68,3 +68,31 @@ CREATE TABLE IF NOT EXISTS "audit_logs" (
 
 -- Create index for admin log queries
 CREATE INDEX IF NOT EXISTS "idx_audit_logs_timestamp" ON "audit_logs"("timestamp" DESC);
+
+-- =========================================================================
+-- 6. Clean up and refactor authentication schema (Google OAuth & Supabase only)
+-- =========================================================================
+
+-- Safely drop local password hashes
+ALTER TABLE IF EXISTS "users" DROP COLUMN IF EXISTS "password_hash";
+
+-- Rename auth_user_id to supabase_user_id (if it hasn't been renamed yet)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='auth_user_id') THEN
+    ALTER TABLE "users" RENAME COLUMN "auth_user_id" TO "supabase_user_id";
+  END IF;
+END $$;
+
+-- Make supabase_user_id NOT NULL if we are fully migrated
+-- Note: Make sure existing users have a valid supabase UUID linked first before setting this to NOT NULL.
+-- ALTER TABLE "users" ALTER COLUMN "supabase_user_id" SET NOT NULL;
+
+-- Rename employee_id to employee_code (if it hasn't been renamed yet)
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='employee_id') THEN
+    ALTER TABLE "users" RENAME COLUMN "employee_id" TO "employee_code";
+  END IF;
+END $$;
+

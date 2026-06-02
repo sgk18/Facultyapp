@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withErrorHandler, sendSuccess, ValidationError, UnauthorizedError, ForbiddenError } from '@/utils/errors';
 import { supabase } from '@/lib/supabase';
 import { prisma } from '@/lib/prisma';
@@ -31,7 +31,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   let dbUser = await prisma.user.findFirst({
     where: {
       OR: [
-        { authUserId: supabaseUser.id },
+        { supabaseUserId: supabaseUser.id },
         { email: normalizedEmail },
       ],
     },
@@ -39,11 +39,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   });
 
   if (dbUser) {
-    // Sync authUserId if not already mapped (e.g. legacy local account transitioning to Google Auth)
-    if (!dbUser.authUserId) {
+    // Sync supabaseUserId if not already mapped
+    if (dbUser.supabaseUserId !== supabaseUser.id) {
       dbUser = await prisma.user.update({
         where: { id: dbUser.id },
-        data: { authUserId: supabaseUser.id },
+        data: { supabaseUserId: supabaseUser.id },
         include: { department: true },
       });
     }
@@ -84,14 +84,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const fullName = supabaseUser.user_metadata?.full_name || fallbackName || 'New Faculty Member';
   const avatarUrl = supabaseUser.user_metadata?.avatar_url || null;
 
-  // Assign ADMIN role if it's the very first user on the platform, otherwise default to FACULTY
-  const existingUsersCount = await prisma.user.count();
-  const role = existingUsersCount === 0 ? 'ADMIN' : 'FACULTY';
+  // Default role is FACULTY (Admin promotion must be manual)
+  const role = 'FACULTY';
 
   // Instantiate profile
   dbUser = await prisma.user.create({
     data: {
-      authUserId: supabaseUser.id,
+      supabaseUserId: supabaseUser.id,
       email: normalizedEmail,
       fullName,
       avatarUrl,

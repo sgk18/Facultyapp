@@ -34,28 +34,27 @@ model Department {
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
-  authUserId    String?        @unique @db.Uuid @map("auth_user_id")
-  email         String         @unique
-  passwordHash  String?        @map("password_hash")
-  fullName      String         @map("full_name")
-  role          Role           @default(FACULTY)
-  departmentId  String         @db.Uuid @map("department_id")
-  department    Department     @relation(fields: [departmentId], references: [id])
-  avatarUrl     String?        @map("avatar_url")
-  deadlines     Deadline[]     @relation("CreatedDeadlines")
-  notifications Notification[]
-  pushTokens    PushToken[]
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
+  id             String         @id @default(uuid()) @db.Uuid
+  supabaseUserId String         @unique @db.Uuid @map("supabase_user_id")
+  email          String         @unique
+  fullName       String         @map("full_name")
+  role           Role           @default(FACULTY)
+  departmentId   String         @db.Uuid @map("department_id")
+  department     Department     @relation(fields: [departmentId], references: [id])
+  avatarUrl      String?        @map("avatar_url")
+  deadlines      Deadline[]     @relation("CreatedDeadlines")
+  notifications  Notification[]
+  pushTokens     PushToken[]
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
   
   // New fields appended to the end
-  employeeId    String?        @map("employee_id")
-  isSuspended   Boolean        @default(false) @map("is_suspended")
-  googleAccount GoogleAccount?
+  employeeCode   String?        @map("employee_code")
+  isSuspended    Boolean        @default(false) @map("is_suspended")
+  googleAccount  GoogleAccount?
   calendarEvents CalendarEvent[]
-  reminders     Reminder[]
-  auditLogs     AuditLog[]
+  reminders      Reminder[]
+  auditLogs      AuditLog[]
 
   @@map("users")
 }

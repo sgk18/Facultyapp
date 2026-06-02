@@ -1,14 +1,10 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandler, sendSuccess } from '@/utils/errors';
-import { requireAuth } from '@/middleware/auth.middleware';
-import { requireRoles } from '@/middleware/role.middleware';
+import { requireAdmin } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
-  const activeUser = await requireAuth(req);
-  
-  // Enforce role permission: Only admin can access detailed administrative user feeds
-  requireRoles(activeUser, ['ADMIN']);
+  const activeUser = await requireAdmin(req);
 
   const users = await prisma.user.findMany({
     include: {

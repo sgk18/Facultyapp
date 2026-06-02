@@ -1,15 +1,11 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandler, sendSuccess, ValidationError, ForbiddenError } from '@/utils/errors';
-import { requireAuth } from '@/middleware/auth.middleware';
-import { requireRoles } from '@/middleware/role.middleware';
+import { requireAdmin } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 import { userRoleUpdateSchema } from '@/validators/admin';
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const activeUser = await requireAuth(req);
-  
-  // Enforce role permission hierarchy: Only admins can manage roles
-  requireRoles(activeUser, ['ADMIN']);
+  const activeUser = await requireAdmin(req);
 
   const body = await req.json();
   const result = userRoleUpdateSchema.safeParse(body);

@@ -29,7 +29,7 @@ export class UserService {
       departmentId?: string;
       role?: Role;
       avatarUrl?: string | null;
-      authUserId?: string | null;
+      supabaseUserId?: string;
     }
   ) {
     // Verify department exists if departmentId is being updated

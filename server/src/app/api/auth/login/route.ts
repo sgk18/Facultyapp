@@ -1,19 +1,9 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError } from '@/utils/errors';
-import { AuthService } from '@/services/auth.service';
-import { loginSchema } from '@/validators/auth';
+import { withErrorHandler, AppError } from '@/utils/errors';
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const body = await req.json();
-  const result = loginSchema.safeParse(body);
-
-  if (!result.success) {
-    throw new ValidationError(
-      'Validation failed',
-      result.error.errors.map((e) => e.message)
-    );
-  }
-
-  const authSession = await AuthService.login(result.data);
-  return sendSuccess(authSession, 'Login successful');
+  throw new AppError(
+    'Password-based authentication has been permanently disabled. Please sign in using Google OAuth.',
+    410
+  );
 });

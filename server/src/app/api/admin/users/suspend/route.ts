@@ -1,16 +1,11 @@
 import { NextRequest } from 'next/server';
 import { withErrorHandler, sendSuccess, ValidationError, ForbiddenError, NotFoundError } from '@/utils/errors';
-import { requireAuth } from '@/middleware/auth.middleware';
+import { requireAdmin } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 import { AuditService } from '@/services/audit.service';
 
 export const POST = withErrorHandler(async (req: NextRequest) => {
-  const admin = await requireAuth(req);
-
-  // Validate administrator privileges
-  if (admin.role !== 'ADMIN') {
-    throw new ForbiddenError('Administrator privileges required');
-  }
+  const admin = await requireAdmin(req);
 
   const body = await req.json();
   const { userId, suspend } = body;
