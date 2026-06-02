@@ -11,6 +11,8 @@ enum Role {
   ADMIN
   HOD
   FACULTY
+
+  @@map("role_type")
 }
 
 enum Priority {
