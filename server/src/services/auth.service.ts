@@ -15,37 +15,7 @@ export class AuthService {
     const { email, password } = input;
     const normalizedEmail = email.toLowerCase().trim();
 
-    // 1. Bootstrapping: Auto-create default admin account on startup if it doesn't exist yet
-    if (normalizedEmail === 'admin@christuniversity.in') {
-      const adminExists = await prisma.user.findUnique({
-        where: { email: normalizedEmail },
-      });
-
-      if (!adminExists) {
-        let department = await prisma.department.findFirst();
-        if (!department) {
-          department = await prisma.department.create({
-            data: {
-              name: 'General Faculty Department',
-              code: 'GEN',
-            },
-          });
-        }
-
-        const passwordHash = await bcrypt.hash('password123', 10);
-        await prisma.user.create({
-          data: {
-            email: normalizedEmail,
-            passwordHash,
-            fullName: 'System Administrator',
-            role: 'ADMIN',
-            departmentId: department.id,
-          },
-        });
-      }
-    }
-
-    // 2. Query our internal database profile by email
+    // 1. Query our internal database profile by email
     const existingUser = await prisma.user.findUnique({
       where: { email: normalizedEmail },
       include: { department: true },
@@ -99,8 +69,7 @@ export class AuthService {
       // User profile exists - check password
       if (dbUser?.passwordHash || existingUser.passwordHash) {
         const hash = dbUser?.passwordHash || existingUser.passwordHash;
-        const isMatch = await bcrypt.compare(password, hash) || 
-                        (normalizedEmail === 'admin@christuniversity.in' && (password === 'password123' || password === 'pasword123'));
+        const isMatch = await bcrypt.compare(password, hash);
         
         if (!isMatch) {
           throw new UnauthorizedError('Invalid email or password');
