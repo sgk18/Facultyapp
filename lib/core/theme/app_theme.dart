@@ -3,21 +3,25 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   // Brand Color Palette
-  static const Color primary = Color(0xFF2563EB); // Royal Blue
-  static const Color darkBlue = Color(0xFF1E3A8A); // Deep Navy
-  static const Color lightBlue = Color(0xFF60A5FA); // Sky Blue
+  static const Color primary = Color(0xFF0147AD); // Brand Primary Blue
+  static const Color darkBlue = Color(0xFF111827); // Dark Text (#111827)
+  static const Color lightBlue = Color(0xFF4A84F0); // Highlight Sky Blue
   static const Color white = Color(0xFFFFFFFF);
   
-  static const Color background = Color(0xFFF8FAFC); // Very light blue-grey
+  static const Color background = Color(0xFFDCDCDC); // Secondary Background
   static const Color surface = Color(0xFFFFFFFF);
+  
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
   static const Color error = Color(0xFFEF4444);
+  static const Color secondaryText = Color(0xFF6B7280);
 
-  // Main Gradient
+  // Main Brand Gradient
   static const LinearGradient mainGradient = LinearGradient(
     colors: [
-      Color(0xFF1E3A8A), // #1E3A8A
-      Color(0xFF2563EB), // #2563EB
-      Color(0xFF60A5FA), // #60A5FA
+      Color(0xFF0147AD), // #0147AD
+      Color(0xFF1D5FD1), // #1D5FD1
+      Color(0xFF4A84F0), // #4A84F0
     ],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -35,7 +39,7 @@ class AppTheme {
 
   static List<BoxShadow> premiumShadow = [
     BoxShadow(
-      color: const Color(0xFF1E3A8A).withOpacity(0.08),
+      color: const Color(0xFF0147AD).withOpacity(0.08),
       blurRadius: 24,
       offset: const Offset(0, 8),
     ),
@@ -65,12 +69,12 @@ class AppTheme {
         bodyLarge: GoogleFonts.inter(
           fontSize: 16,
           fontWeight: FontWeight.normal,
-          color: Colors.black87,
+          color: darkBlue,
         ),
         bodyMedium: GoogleFonts.inter(
           fontSize: 14,
           fontWeight: FontWeight.normal,
-          color: Colors.black54,
+          color: secondaryText,
         ),
       ),
       cardTheme: CardTheme(
@@ -85,22 +89,22 @@ class AppTheme {
         fillColor: Colors.white,
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: background),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: background),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: error, width: 1),
         ),
-        labelStyle: TextStyle(color: Colors.grey.shade500),
+        labelStyle: const TextStyle(color: secondaryText),
         floatingLabelStyle: const TextStyle(color: primary),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -110,7 +114,7 @@ class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
           textStyle: GoogleFonts.outfit(
             fontSize: 16,

@@ -201,13 +201,13 @@ export default function AdminDashboard() {
     return (
       <div className="login-container">
         <style jsx global>{`
-          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
           body {
             margin: 0;
-            background-color: #f3f8fc;
-            font-family: 'Outfit', sans-serif;
-            color: #1e293b;
+            background-color: #DCDCDC;
+            font-family: 'Inter', sans-serif;
+            color: #111827;
           }
 
           .login-container {
@@ -216,46 +216,47 @@ export default function AdminDashboard() {
             align-items: center;
             justify-content: center;
             padding: 20px;
-            background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 50%, #ffffff 100%);
+            background-color: #DCDCDC;
           }
 
           .login-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.6);
-            border-radius: 24px;
+            background: #FFFFFF;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 16px;
             padding: 40px;
             width: 100%;
             max-width: 450px;
-            box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
             text-align: center;
-            animation: fadeIn 0.5s ease-out;
+            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           .logo {
             width: 54px;
             height: 54px;
             border-radius: 12px;
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 50%, #4A84F0 100%);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
+            font-family: 'Outfit', sans-serif;
             font-size: 1.8rem;
             font-weight: 700;
-            margin: 0 auto 20px auto;
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
+            margin: 0 auto 24px auto;
+            box-shadow: 0 8px 20px rgba(1, 71, 173, 0.15);
           }
 
           h2 {
             margin: 0 0 8px 0;
+            font-family: 'Outfit', sans-serif;
             font-size: 1.6rem;
             font-weight: 700;
-            color: #1e3a8a;
+            color: #111827;
           }
 
           p.tagline {
-            color: #64748b;
+            color: #6B7280;
             font-size: 0.9rem;
             margin: 0 0 32px 0;
           }
@@ -267,9 +268,10 @@ export default function AdminDashboard() {
 
           .form-group label {
             display: block;
-            font-size: 0.85rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
             font-weight: 600;
-            color: #1e3a8a;
+            color: #0147AD;
             margin-bottom: 6px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -278,10 +280,10 @@ export default function AdminDashboard() {
           .form-group input {
             width: 100%;
             padding: 12px 16px;
-            border-radius: 10px;
-            border: 1.5px solid #dbeafe;
+            border-radius: 12px;
+            border: 1.5px solid #DCDCDC;
             background-color: white;
-            color: #0f172a;
+            color: #111827;
             font-size: 0.95rem;
             outline: none;
             box-sizing: border-box;
@@ -289,33 +291,35 @@ export default function AdminDashboard() {
           }
 
           .form-group input:focus {
-            border-color: #3b82f6;
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+            border-color: #0147AD;
+            box-shadow: 0 0 0 4px rgba(1, 71, 173, 0.15);
           }
 
           .btn-login {
             width: 100%;
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            background: #0147AD;
             color: white;
             border: none;
             padding: 14px;
-            border-radius: 10px;
+            border-radius: 12px;
+            font-family: 'Outfit', sans-serif;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 4px 12px rgba(1, 71, 173, 0.15);
             transition: all 0.2s ease;
             margin-top: 10px;
           }
 
           .btn-login:hover {
+            background-color: #1D5FD1;
             transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+            box-shadow: 0 8px 20px rgba(1, 71, 173, 0.25);
           }
 
           .toast {
             padding: 12px 16px;
-            border-radius: 10px;
+            border-radius: 12px;
             margin-bottom: 20px;
             font-weight: 500;
             font-size: 0.9rem;
@@ -325,13 +329,13 @@ export default function AdminDashboard() {
 
           .toast-error {
             background-color: #fef2f2;
-            color: #ef4444;
+            color: #EF4444;
             border: 1px solid #fee2e2;
           }
 
           .toast-success {
             background-color: #f0fdf4;
-            color: #22c55e;
+            color: #10B981;
             border: 1px solid #dcfce7;
           }
 
@@ -382,20 +386,20 @@ export default function AdminDashboard() {
     <div className="admin-container">
       {/* Dynamic Scoped CSS */}
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
         body {
           margin: 0;
-          background-color: #f8fafc;
-          font-family: 'Outfit', sans-serif;
-          color: #334155;
+          background-color: #DCDCDC;
+          font-family: 'Inter', sans-serif;
+          color: #111827;
         }
 
         .admin-container {
           max-width: 1200px;
           margin: 0 auto;
           padding: 40px 20px;
-          animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         header {
@@ -403,14 +407,15 @@ export default function AdminDashboard() {
           justify-content: space-between;
           align-items: center;
           margin-bottom: 40px;
-          background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 50%, #4A84F0 100%);
           padding: 24px 32px;
-          border-radius: 20px;
-          box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15);
+          border-radius: 16px;
+          box-shadow: 0 4px 20px rgba(1, 71, 173, 0.15);
           color: white;
         }
 
         .logo-section h1 {
+          font-family: 'Outfit', sans-serif;
           font-size: 1.6rem;
           font-weight: 700;
           margin: 0;
@@ -423,19 +428,20 @@ export default function AdminDashboard() {
         }
 
         .btn-logout {
-          background-color: rgba(255, 255, 255, 0.1);
-          border: 1px solid rgba(255, 255, 255, 0.2);
+          background-color: rgba(255, 255, 255, 0.15);
+          border: 1px solid rgba(255, 255, 255, 0.25);
           color: white;
           padding: 8px 18px;
-          border-radius: 8px;
+          border-radius: 12px;
           cursor: pointer;
+          font-family: 'Outfit', sans-serif;
           font-weight: 600;
           font-size: 0.85rem;
           transition: all 0.2s;
         }
 
         .btn-logout:hover {
-          background-color: rgba(255, 255, 255, 0.2);
+          background-color: rgba(255, 255, 255, 0.25);
         }
 
         .stats-grid {
@@ -447,20 +453,20 @@ export default function AdminDashboard() {
 
         .stat-card {
           background: white;
-          border: 1px solid #e2e8f0;
+          border: 1.5px solid #DCDCDC;
           border-radius: 16px;
           padding: 24px;
           display: flex;
           align-items: center;
           gap: 20px;
-          box-shadow: 0 4px 15px rgba(148, 163, 184, 0.05);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
           transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
         }
 
         .stat-card:hover {
-          transform: translateY(-4px);
-          border-color: #bfdbfe;
-          box-shadow: 0 8px 25px rgba(37, 99, 235, 0.08);
+          transform: translateY(-2px);
+          border-color: #0147AD;
+          box-shadow: 0 8px 24px rgba(1, 71, 173, 0.08);
         }
 
         .stat-icon {
@@ -474,30 +480,31 @@ export default function AdminDashboard() {
         }
 
         .blue-icon {
-          background: #eff6ff;
-          color: #2563eb;
+          background: rgba(1, 71, 173, 0.08);
+          color: #0147AD;
         }
 
         .indigo-icon {
-          background: #eef2ff;
-          color: #4f46e5;
+          background: rgba(29, 95, 209, 0.08);
+          color: #1D5FD1;
         }
 
         .cyan-icon {
-          background: #ecfeff;
-          color: #0891b2;
+          background: rgba(74, 132, 240, 0.08);
+          color: #4A84F0;
         }
 
         .stat-details h3 {
           margin: 0;
+          font-family: 'Outfit', sans-serif;
           font-size: 2rem;
           font-weight: 700;
-          color: #1e3a8a;
+          color: #111827;
         }
 
         .stat-details p {
           margin: 4px 0 0 0;
-          color: #64748b;
+          color: #6B7280;
           font-size: 0.85rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
@@ -506,7 +513,7 @@ export default function AdminDashboard() {
 
         .msg-toast {
           padding: 12px 20px;
-          border-radius: 10px;
+          border-radius: 12px;
           margin-bottom: 25px;
           font-weight: 500;
           animation: slideIn 0.3s ease-out;
@@ -514,20 +521,20 @@ export default function AdminDashboard() {
 
         .msg-success {
           background-color: #f0fdf4;
-          color: #15803d;
+          color: #10B981;
           border: 1px solid #dcfce7;
         }
 
         .msg-error {
           background-color: #fef2f2;
-          color: #b91c1c;
+          color: #EF4444;
           border: 1px solid #fee2e2;
         }
 
         /* Search & Filters Controls */
         .controls-card {
           background: white;
-          border: 1px solid #e2e8f0;
+          border: 1.5px solid #DCDCDC;
           border-radius: 16px;
           padding: 20px 24px;
           margin-bottom: 24px;
@@ -535,46 +542,47 @@ export default function AdminDashboard() {
           gap: 16px;
           flex-wrap: wrap;
           align-items: center;
-          box-shadow: 0 4px 15px rgba(148, 163, 184, 0.05);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
         }
 
         .search-input {
           flex: 1;
           min-width: 250px;
           padding: 10px 14px;
-          border-radius: 8px;
-          border: 1.5px solid #e2e8f0;
+          border-radius: 12px;
+          border: 1.5px solid #DCDCDC;
           outline: none;
           font-size: 0.9rem;
           transition: border-color 0.2s;
         }
 
         .search-input:focus {
-          border-color: #3b82f6;
+          border-color: #0147AD;
+          box-shadow: 0 0 0 4px rgba(1, 71, 173, 0.15);
         }
 
         .filter-select {
           padding: 10px 14px;
-          border-radius: 8px;
-          border: 1.5px solid #e2e8f0;
+          border-radius: 12px;
+          border: 1.5px solid #DCDCDC;
           outline: none;
           font-size: 0.9rem;
           background-color: white;
-          color: #334155;
+          color: #111827;
           cursor: pointer;
           transition: border-color 0.2s;
         }
 
         .filter-select:focus {
-          border-color: #3b82f6;
+          border-color: #0147AD;
         }
 
         .table-container {
           background: white;
-          border: 1px solid #e2e8f0;
+          border: 1.5px solid #DCDCDC;
           border-radius: 16px;
           overflow: hidden;
-          box-shadow: 0 4px 15px rgba(148, 163, 184, 0.05);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
         }
 
         table {
@@ -586,19 +594,21 @@ export default function AdminDashboard() {
         th {
           background-color: #f8fafc;
           padding: 16px 24px;
+          font-family: 'Outfit', sans-serif;
           font-weight: 600;
-          color: #475569;
+          color: #6B7280;
           font-size: 0.8rem;
           text-transform: uppercase;
           letter-spacing: 0.5px;
-          border-bottom: 1.5px solid #e2e8f0;
+          border-bottom: 1.5px solid #DCDCDC;
         }
 
         td {
           padding: 18px 24px;
-          border-bottom: 1px solid #f1f5f9;
+          border-bottom: 1px solid #DCDCDC;
           font-size: 0.9rem;
           vertical-align: middle;
+          color: #111827;
         }
 
         tr:last-child td {
@@ -616,10 +626,11 @@ export default function AdminDashboard() {
           height: 40px;
           border-radius: 50%;
           object-fit: cover;
-          background: linear-gradient(135deg, #3b82f6, #6366f1);
+          background: linear-gradient(135deg, #0147AD, #1D5FD1);
           display: flex;
           align-items: center;
           justify-content: center;
+          font-family: 'Outfit', sans-serif;
           font-weight: 600;
           font-size: 0.95rem;
           color: white;
@@ -629,19 +640,19 @@ export default function AdminDashboard() {
           margin: 0;
           font-size: 0.9rem;
           font-weight: 600;
-          color: #0f172a;
+          color: #111827;
         }
 
         .faculty-info p {
           margin: 2px 0 0 0;
-          color: #64748b;
+          color: #6B7280;
           font-size: 0.8rem;
         }
 
         .dept-tag {
-          background-color: #eff6ff;
-          border: 1px solid #bfdbfe;
-          color: #1e40af;
+          background-color: #f3f4f6;
+          border: 1px solid #DCDCDC;
+          color: #111827;
           padding: 4px 10px;
           border-radius: 100px;
           font-size: 0.7rem;
@@ -659,19 +670,19 @@ export default function AdminDashboard() {
 
         .role-admin {
           background-color: #fee2e2;
-          color: #ef4444;
+          color: #EF4444;
           border: 1px solid #fecaca;
         }
 
         .role-hod {
           background-color: #dcfce7;
-          color: #15803d;
+          color: #10B981;
           border: 1px solid #bbf7d0;
         }
 
         .role-faculty {
           background-color: #eff6ff;
-          color: #1e40af;
+          color: #0147AD;
           border: 1px solid #bfdbfe;
         }
 
@@ -682,8 +693,9 @@ export default function AdminDashboard() {
 
         .btn-action {
           padding: 6px 12px;
-          border-radius: 6px;
+          border-radius: 12px;
           font-size: 0.8rem;
+          font-family: 'Outfit', sans-serif;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s;
@@ -692,23 +704,23 @@ export default function AdminDashboard() {
 
         .btn-promote {
           background-color: #f0fdf4;
-          color: #166534;
+          color: #10B981;
           border: 1px solid #bbf7d0;
         }
 
         .btn-promote:hover {
-          background-color: #166534;
+          background-color: #10B981;
           color: white;
         }
 
         .btn-demote {
           background-color: #fef2f2;
-          color: #991b1b;
+          color: #EF4444;
           border: 1px solid #fecaca;
         }
 
         .btn-demote:hover {
-          background-color: #991b1b;
+          background-color: #EF4444;
           color: white;
         }
 

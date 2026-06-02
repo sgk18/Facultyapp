@@ -8,13 +8,13 @@ export default function Home() {
     <div className="home-container">
       {/* Dynamic Scoped CSS */}
       <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
         body {
           margin: 0;
-          background-color: #f8fafc;
-          font-family: 'Outfit', sans-serif;
-          color: #334155;
+          background-color: #DCDCDC;
+          font-family: 'Inter', sans-serif;
+          color: #111827;
           overflow-x: hidden;
         }
 
@@ -26,20 +26,19 @@ export default function Home() {
           justify-content: center;
           padding: 40px 20px;
           position: relative;
-          background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 50%, #ffffff 100%);
+          background-color: #DCDCDC;
         }
 
         .card {
-          background: rgba(255, 255, 255, 0.85);
-          backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.6);
-          border-radius: 24px;
+          background: #FFFFFF;
+          border: 1px solid rgba(0, 0, 0, 0.08);
+          border-radius: 16px;
           padding: 48px;
           max-width: 650px;
           width: 100%;
           text-align: center;
-          box-shadow: 0 20px 40px -15px rgba(37, 99, 235, 0.1);
-          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+          animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .logo-area {
@@ -54,27 +53,29 @@ export default function Home() {
           width: 42px;
           height: 42px;
           border-radius: 10px;
-          background: linear-gradient(135deg, #2563eb, #3b82f6);
+          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 50%, #4A84F0 100%);
           display: flex;
           align-items: center;
           justify-content: center;
+          font-family: 'Outfit', sans-serif;
           font-weight: 700;
           font-size: 1.4rem;
           color: white;
-          box-shadow: 0 8px 16px -4px rgba(59, 130, 246, 0.3);
+          box-shadow: 0 4px 12px rgba(1, 71, 173, 0.2);
         }
 
         h1 {
+          font-family: 'Outfit', sans-serif;
           font-size: 2.2rem;
           font-weight: 700;
           margin: 0;
-          background: linear-gradient(135deg, #1e3a8a, #2563eb);
+          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
-          color: #64748b;
+          color: #6B7280;
           font-size: 1.1rem;
           margin-top: 10px;
           margin-bottom: 30px;
@@ -86,7 +87,7 @@ export default function Home() {
           gap: 8px;
           background-color: #f0fdf4;
           border: 1px solid #dcfce7;
-          color: #15803d;
+          color: #10B981;
           padding: 8px 16px;
           border-radius: 100px;
           font-size: 0.85rem;
@@ -97,7 +98,7 @@ export default function Home() {
         .status-dot {
           width: 8px;
           height: 8px;
-          background-color: #10b981;
+          background-color: #10B981;
           border-radius: 50%;
           display: inline-block;
           animation: pulse 1.8s infinite;
@@ -116,6 +117,7 @@ export default function Home() {
           justify-content: center;
           padding: 14px 28px;
           border-radius: 12px;
+          font-family: 'Outfit', sans-serif;
           font-weight: 600;
           font-size: 0.95rem;
           cursor: pointer;
@@ -124,15 +126,15 @@ export default function Home() {
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #2563eb, #1e40af);
+          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 100%);
           color: white;
           border: none;
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+          box-shadow: 0 4px 12px rgba(1, 71, 173, 0.15);
         }
 
         .btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+          box-shadow: 0 8px 20px rgba(1, 71, 173, 0.25);
         }
 
         .btn-primary:active {
@@ -141,24 +143,25 @@ export default function Home() {
 
         .btn-secondary {
           background-color: transparent;
-          border: 1.5px solid #dbeafe;
-          color: #1e3a8a;
+          border: 1.5px solid #DCDCDC;
+          color: #0147AD;
         }
 
         .btn-secondary:hover {
           background-color: #eff6ff;
-          border-color: #bfdbfe;
+          border-color: #0147AD;
         }
 
         .routes-section {
           text-align: left;
-          border-top: 1.5px solid #e2e8f0;
+          border-top: 1.5px solid #DCDCDC;
           padding-top: 30px;
         }
 
         .routes-section h3 {
+          font-family: 'Outfit', sans-serif;
           font-size: 1rem;
-          color: #1e3a8a;
+          color: #0147AD;
           margin-bottom: 16px;
           font-weight: 600;
           text-transform: uppercase;
@@ -171,7 +174,7 @@ export default function Home() {
           align-items: center;
           padding: 10px 0;
           font-size: 0.9rem;
-          border-bottom: 1px dashed #e2e8f0;
+          border-bottom: 1px dashed #DCDCDC;
         }
 
         .route-item:last-child {
@@ -180,18 +183,18 @@ export default function Home() {
 
         .route-path {
           font-family: monospace;
-          color: #2563eb;
+          color: #0147AD;
           font-weight: 600;
         }
 
         .route-desc {
-          color: #64748b;
+          color: #6B7280;
         }
 
         footer {
           margin-top: 40px;
           font-size: 0.8rem;
-          color: #64748b;
+          color: #6B7280;
         }
 
         @keyframes slideUp {

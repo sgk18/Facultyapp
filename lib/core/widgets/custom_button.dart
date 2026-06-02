@@ -50,7 +50,7 @@ class CustomButton extends StatelessWidget {
         height: 56,
         decoration: BoxDecoration(
           gradient: AppTheme.mainGradient,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: AppTheme.premiumShadow,
         ),
         child: ElevatedButton(
@@ -59,7 +59,7 @@ class CustomButton extends StatelessWidget {
             foregroundColor: Colors.white,
             shadowColor: Colors.transparent,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
           onPressed: isLoading ? null : onPressed,
@@ -76,7 +76,7 @@ class CustomButton extends StatelessWidget {
           backgroundColor: AppTheme.primary,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
         onPressed: (isLoading || onPressed == null) ? null : onPressed,

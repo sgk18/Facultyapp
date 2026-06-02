@@ -24,22 +24,41 @@ export class EmailService {
     const subject = `[CHRIST University] Academic Deadline Alert: ${deadlineTitle}`;
     
     const htmlContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
-        <h2 style="color: #1e3a8a; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">Academic Deadline Reminder</h2>
-        <p>Dear Prof. ${facultyName},</p>
-        <p>This is a reminder regarding an upcoming academic deadline:</p>
-        
-        <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #2563eb; margin: 20px 0;">
-          <h3 style="margin-top: 0; color: #1e3a8a;">${deadlineTitle}</h3>
-          <p><strong>Due Date:</strong> ${dueDateStr}</p>
-          <p><strong>Description:</strong> ${description}</p>
+      <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); box-sizing: border-box;">
+        <!-- Header Bar -->
+        <div style="background-color: #0147AD; padding: 32px 24px; text-align: center;">
+          <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">CHRIST Faculty Hub</h1>
+          <p style="color: #bfdbfe; margin: 4px 0 0 0; font-size: 14px;">Official Academic Notification</p>
         </div>
         
-        <p>Please ensure all submissions or reviews are completed before the deadline.</p>
-        <p style="margin-top: 30px; font-size: 0.85em; color: #64748b;">
-          CHRIST (Deemed to be University)<br/>
-          This is an automated notification. Please do not reply directly.
-        </p>
+        <!-- Body Content -->
+        <div style="padding: 32px 24px; background-color: #ffffff; color: #111827;">
+          <h2 style="font-size: 18px; font-weight: 600; margin-top: 0; margin-bottom: 16px; color: #111827;">Academic Deadline Reminder</h2>
+          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 24px;">Dear Prof. <strong>${facultyName}</strong>,</p>
+          <p style="font-size: 15px; line-height: 1.6; margin-bottom: 24px;">This is a reminder regarding an upcoming academic deadline in your department:</p>
+          
+          <!-- Deadline Details Card -->
+          <div style="background-color: #ffffff; padding: 20px; border-radius: 12px; border: 1.5px solid #DCDCDC; border-left: 4px solid #0147AD; margin-bottom: 28px;">
+            <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 16px; color: #0147AD; font-weight: 700;">${deadlineTitle}</h3>
+            <p style="margin: 0 0 8px 0; font-size: 14px; line-height: 1.5;"><strong style="color: #111827;">Due Date:</strong> ${dueDateStr}</p>
+            <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #6B7280;"><strong style="color: #111827;">Description:</strong> ${description}</p>
+          </div>
+          
+          <!-- Action Button -->
+          <div style="text-align: center; margin-bottom: 16px;">
+            <a href="https://christuniversity.in" style="display: inline-block; background-color: #0147AD; color: #ffffff; font-weight: 600; text-decoration: none; padding: 12px 28px; border-radius: 12px; font-size: 15px; box-shadow: 0 4px 10px rgba(1, 71, 173, 0.2);">
+              Access Faculty Portal
+            </a>
+          </div>
+          
+          <p style="font-size: 14px; line-height: 1.6; color: #6B7280; margin-top: 28px;">Please ensure all submissions or reviews are completed prior to the date indicated above.</p>
+        </div>
+        
+        <!-- Footer Bar -->
+        <div style="background-color: #DCDCDC; padding: 24px; text-align: center; color: #6B7280; font-size: 12px; border-top: 1px solid #e2e8f0;">
+          <p style="margin: 0 0 6px 0; font-weight: 600; color: #111827;">CHRIST (Deemed to be University)</p>
+          <p style="margin: 0; line-height: 1.5;">This is an automated administrative notification.<br/>Please do not reply directly to this message.</p>
+        </div>
       </div>
     `;
 
