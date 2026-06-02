@@ -1,9 +1,11 @@
 -- Upgrades for CHRIST Faculty App (Supabase PostgreSQL Setup Script)
 -- Run this in your Supabase SQL Editor to sync your remote database with the new schema features.
 
--- 1. Update users table with new fields
+-- 1. Update users table with new/missing fields
 ALTER TABLE IF EXISTS "users" 
+ADD COLUMN IF NOT EXISTS "password_hash" TEXT,
 ADD COLUMN IF NOT EXISTS "employee_id" TEXT,
+ADD COLUMN IF NOT EXISTS "auth_user_id" UUID UNIQUE,
 ADD COLUMN IF NOT EXISTS "is_suspended" BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- 2. Create google_accounts table
