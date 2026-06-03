@@ -17,13 +17,10 @@ void main() async {
       // Enable automatic performance monitoring
       options.tracesSampleRate = 1.0;
 
-      // Capture errors thrown in the Flutter framework itself (e.g. build errors)
-      options.enableAutoPerformanceTracing = true;
-
       // Profile 10% of transactions for performance insights
       options.profilesSampleRate = 0.1;
 
-      // App name context for breadcrumbs
+      // Don't attach screenshots (privacy-safe for university platform)
       options.attachScreenshot = false;
     },
     appRunner: () async {
