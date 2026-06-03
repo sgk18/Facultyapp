@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_client.dart';
+import '../../auth/presentation/auth_notifier.dart';
 
 class CalendarEvent {
   final String id;
@@ -97,12 +98,20 @@ class CalendarEventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent
   }
 
   void _subscribeRealtime() {
+    final user = _ref.read(authNotifierProvider).user;
+    if (user == null) return;
+
     _channel = Supabase.instance.client
         .channel('public:calendar_events')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'calendar_events',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
           callback: (payload) {
             fetchCalendarEvents();
           },
@@ -120,5 +129,6 @@ class CalendarEventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent
 }
 
 final calendarEventsProvider = StateNotifierProvider<CalendarEventsNotifier, AsyncValue<List<CalendarEvent>>>((ref) {
+  ref.watch(authNotifierProvider);
   return CalendarEventsNotifier(ref);
 });

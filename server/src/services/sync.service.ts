@@ -65,7 +65,7 @@ export class SyncService {
         const existing = await prisma.deadline.findFirst({
           where: {
             title: parsed.title,
-            createdById: userId,
+            ownerId: userId,
             dueDate: parsed.dueDate,
           },
         });
@@ -84,7 +84,7 @@ export class SyncService {
               description: parsed.description,
               dueDate: parsed.dueDate,
               priority: parsed.priority,
-              createdById: userId,
+              ownerId: userId,
               departmentId: user.departmentId,
             },
           });

@@ -23,7 +23,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       take: dLimit,
       orderBy: { createdAt: 'desc' },
       include: {
-        createdBy: {
+        owner: {
           select: {
             fullName: true,
             email: true,

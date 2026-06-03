@@ -21,6 +21,12 @@ enum Priority {
   LOW
 }
 
+enum Visibility {
+  PRIVATE
+  DEPARTMENT
+  PUBLIC
+}
+
 model Department {
   id        String     @id @default(uuid()) @db.Uuid
   name      String     @unique
@@ -65,14 +71,15 @@ model Deadline {
   description  String
   dueDate      DateTime       @map("due_date")
   priority     Priority       @default(MEDIUM)
-  createdById  String         @db.Uuid @map("created_by")
-  createdBy    User           @relation("CreatedDeadlines", fields: [createdById], references: [id], onDelete: Cascade)
+  ownerId      String         @db.Uuid @map("owner_id")
+  owner        User           @relation("CreatedDeadlines", fields: [ownerId], references: [id], onDelete: Cascade)
   departmentId String         @db.Uuid @map("department_id")
   department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   isCompleted  Boolean        @default(false) @map("is_completed")
   notifications Notification[]
   createdAt    DateTime       @default(now()) @map("created_at")
   updatedAt    DateTime       @updatedAt @map("updated_at")
+  visibility   Visibility     @default(PRIVATE)
 
   @@map("deadlines")
 }

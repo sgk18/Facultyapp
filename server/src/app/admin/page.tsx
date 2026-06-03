@@ -1309,8 +1309,8 @@ export default function AdminDashboard() {
                     <tr key={d.id}>
                       <td>
                         <div className="faculty-info">
-                          <h4 style={{ margin: 0 }}>{d.createdBy?.fullName || 'System/Email Sync'}</h4>
-                          <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{d.createdBy?.email || 'N/A'}</p>
+                          <h4 style={{ margin: 0 }}>{d.owner?.fullName || 'System/Email Sync'}</h4>
+                          <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{d.owner?.email || 'N/A'}</p>
                         </div>
                       </td>
                       <td style={{ fontWeight: '600', color: '#0147AD' }}>{d.title}</td>

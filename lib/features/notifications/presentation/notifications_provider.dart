@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_client.dart';
+import '../../auth/presentation/auth_notifier.dart';
 
 class AppNotification {
   final String id;
@@ -79,12 +80,20 @@ class NotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotificatio
   }
 
   void _subscribeRealtime() {
+    final user = _ref.read(authNotifierProvider).user;
+    if (user == null) return;
+
     _channel = Supabase.instance.client
         .channel('public:notifications')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'notifications',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
           callback: (payload) {
             fetchNotifications();
           },
@@ -102,5 +111,6 @@ class NotificationsNotifier extends StateNotifier<AsyncValue<List<AppNotificatio
 }
 
 final notificationsProvider = StateNotifierProvider<NotificationsNotifier, AsyncValue<List<AppNotification>>>((ref) {
+  ref.watch(authNotifierProvider);
   return NotificationsNotifier(ref);
 });

@@ -30,10 +30,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
   // 3. Fetch all department deadlines
   const departmentDeadlines = await prisma.deadline.findMany({
-    where: { departmentId: user.departmentId },
+    where: { ownerId: user.id },
     orderBy: { dueDate: 'asc' },
     include: {
-      createdBy: {
+      owner: {
         select: {
           fullName: true,
           email: true,

@@ -9,19 +9,11 @@ export class DeadlineService {
    * Lists deadlines based on role restrictions.
    * Faculty members are restricted to their own department.
    */
-  static async listDeadlines(user: AuthenticatedUser, departmentId?: string) {
-    const whereClause: any = {};
-
-    if (user.role === 'FACULTY') {
-      whereClause.departmentId = user.departmentId;
-    } else if (departmentId) {
-      whereClause.departmentId = departmentId;
-    }
-
+  static async listDeadlines(user: AuthenticatedUser) {
     return prisma.deadline.findMany({
-      where: whereClause,
+      where: { ownerId: user.id },
       include: {
-        createdBy: {
+        owner: {
           select: {
             id: true,
             fullName: true,
@@ -42,7 +34,7 @@ export class DeadlineService {
     const deadline = await prisma.deadline.findUnique({
       where: { id },
       include: {
-        createdBy: {
+        owner: {
           select: {
             id: true,
             fullName: true,
@@ -58,9 +50,8 @@ export class DeadlineService {
       throw new NotFoundError('Deadline not found');
     }
 
-    // Role validation: Faculty can only see deadlines in their own department
-    if (user.role === 'FACULTY' && deadline.departmentId !== user.departmentId) {
-      throw new ForbiddenError('Access to this deadline is restricted to department members');
+    if (deadline.ownerId !== user.id) {
+      throw new ForbiddenError('You do not have permission to view this deadline');
     }
 
     return deadline;
@@ -70,7 +61,7 @@ export class DeadlineService {
    * Creates a deadline and notifies department members.
    */
   static async createDeadline(input: DeadlineInput, user: AuthenticatedUser) {
-    // 1. If user is FACULTY, enforce department alignment
+    // Enforce department alignment for faculty members if needed, otherwise verify department
     if (user.role === 'FACULTY' && input.departmentId !== user.departmentId) {
       throw new ForbiddenError('You can only create deadlines within your own department');
     }
@@ -91,11 +82,11 @@ export class DeadlineService {
         dueDate: new Date(input.dueDate),
         priority: input.priority,
         departmentId: input.departmentId,
-        createdById: user.id,
+        ownerId: user.id,
         isCompleted: input.isCompleted ?? false,
       },
       include: {
-        createdBy: true,
+        owner: true,
         department: true,
       },
     });
@@ -144,14 +135,13 @@ export class DeadlineService {
       timeZoneName: 'short',
     });
 
-    await NotificationService.notifyDepartment({
-      departmentId: deadline.departmentId,
+    await NotificationService.notifySingleUser({
+      userId: user.id,
       title: `New Academic Deadline: ${deadline.title}`,
-      body: `A new deadline has been set for the ${deadline.department.name} by Prof. ${deadline.createdBy.fullName}. Due: ${formattedDate}.`,
+      body: `You set a new private deadline: "${deadline.title}". Due: ${formattedDate}.`,
       deadlineTitle: deadline.title,
       dueDateStr: formattedDate,
       description: deadline.description,
-      excludeUserId: user.id,
       type: 'DEADLINE',
       relatedDeadlineId: deadline.id,
     });
@@ -175,14 +165,8 @@ export class DeadlineService {
       throw new NotFoundError('Deadline not found');
     }
 
-    // Access control: Faculty can only update deadlines in their own department
-    if (user.role === 'FACULTY' && deadline.departmentId !== user.departmentId) {
+    if (deadline.ownerId !== user.id) {
       throw new ForbiddenError('You do not have permission to modify this deadline');
-    }
-
-    // Enforce that faculty cannot update target department to a foreign one
-    if (user.role === 'FACULTY' && input.departmentId && input.departmentId !== user.departmentId) {
-      throw new ForbiddenError('You cannot transfer deadlines to other departments');
     }
 
     if (input.departmentId) {
@@ -206,7 +190,7 @@ export class DeadlineService {
       where: { id },
       data: updateData,
       include: {
-        createdBy: true,
+        owner: true,
         department: true,
       },
     });
@@ -222,14 +206,13 @@ export class DeadlineService {
       timeZoneName: 'short',
     });
 
-    await NotificationService.notifyDepartment({
-      departmentId: updatedDeadline.departmentId,
+    await NotificationService.notifySingleUser({
+      userId: user.id,
       title: `Updated Academic Deadline: ${updatedDeadline.title}`,
-      body: `The deadline "${updatedDeadline.title}" has been modified. New Due Date: ${formattedDate}.`,
+      body: `The private deadline "${updatedDeadline.title}" has been modified. New Due Date: ${formattedDate}.`,
       deadlineTitle: updatedDeadline.title,
       dueDateStr: formattedDate,
       description: updatedDeadline.description,
-      excludeUserId: user.id,
       type: 'DEADLINE',
       relatedDeadlineId: updatedDeadline.id,
     });
@@ -249,8 +232,7 @@ export class DeadlineService {
       throw new NotFoundError('Deadline not found');
     }
 
-    // Access control
-    if (user.role === 'FACULTY' && deadline.departmentId !== user.departmentId) {
+    if (deadline.ownerId !== user.id) {
       throw new ForbiddenError('You do not have permission to delete this deadline');
     }
 

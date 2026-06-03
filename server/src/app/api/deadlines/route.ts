@@ -17,12 +17,9 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const skip = (page - 1) * limit;
 
-    const whereClause: any = {};
-    if (user.role === 'FACULTY') {
-      whereClause.departmentId = user.departmentId;
-    } else if (departmentId) {
-      whereClause.departmentId = departmentId;
-    }
+    const whereClause: any = {
+      ownerId: user.id,
+    };
 
     const [deadlines, total] = await Promise.all([
       prisma.deadline.findMany({
@@ -30,7 +27,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         skip,
         take: limit,
         include: {
-          createdBy: {
+          owner: {
             select: {
               id: true,
               fullName: true,
@@ -56,7 +53,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }, 'Deadlines retrieved successfully');
   }
 
-  const deadlines = await DeadlineService.listDeadlines(user, departmentId);
+  const deadlines = await DeadlineService.listDeadlines(user);
   return sendSuccess(deadlines, 'Deadlines retrieved successfully');
 });
 

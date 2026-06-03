@@ -1,6 +1,7 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_client.dart';
+import '../../auth/presentation/auth_notifier.dart';
 
 class Deadline {
   final String id;
@@ -35,9 +36,9 @@ class Deadline {
       dueDate: DateTime.parse(json['dueDate']),
       priority: json['priority'],
       departmentId: json['departmentId'],
-      createdById: json['createdById'] ?? '',
+      createdById: json['ownerId'] ?? '',
       isCompleted: json['isCompleted'] ?? false,
-      createdByFullName: json['createdBy']?['fullName'],
+      createdByFullName: json['owner']?['fullName'],
       departmentName: json['department']?['name'],
     );
   }
@@ -99,12 +100,20 @@ class DeadlinesNotifier extends StateNotifier<AsyncValue<List<Deadline>>> {
   }
 
   void _subscribeRealtime() {
+    final user = _ref.read(authNotifierProvider).user;
+    if (user == null) return;
+
     _channel = Supabase.instance.client
         .channel('public:deadlines')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'deadlines',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'owner_id',
+            value: user.id,
+          ),
           callback: (payload) {
             fetchDeadlines();
           },
@@ -122,6 +131,7 @@ class DeadlinesNotifier extends StateNotifier<AsyncValue<List<Deadline>>> {
 }
 
 final deadlinesProvider = StateNotifierProvider<DeadlinesNotifier, AsyncValue<List<Deadline>>>((ref) {
+  ref.watch(authNotifierProvider);
   return DeadlinesNotifier(ref);
 });
 

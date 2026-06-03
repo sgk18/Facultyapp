@@ -2,6 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/services/local_notification_service.dart';
+import '../../auth/presentation/auth_notifier.dart';
 
 class Reminder {
   final String id;
@@ -130,12 +131,20 @@ class RemindersNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
   }
 
   void _subscribeRealtime() {
+    final user = _ref.read(authNotifierProvider).user;
+    if (user == null) return;
+
     _channel = Supabase.instance.client
         .channel('public:reminders')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
           table: 'reminders',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'user_id',
+            value: user.id,
+          ),
           callback: (payload) {
             fetchReminders();
           },
@@ -153,5 +162,6 @@ class RemindersNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
 }
 
 final remindersProvider = StateNotifierProvider<RemindersNotifier, AsyncValue<List<Reminder>>>((ref) {
+  ref.watch(authNotifierProvider);
   return RemindersNotifier(ref);
 });

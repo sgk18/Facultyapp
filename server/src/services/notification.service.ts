@@ -133,4 +133,75 @@ export class NotificationService {
 
     return { totalTargets: activeUsers.length };
   }
+
+  /**
+   * Sends notification via DB, FCM Push, and Email to a single user
+   */
+  static async notifySingleUser(params: {
+    userId: string;
+    title: string;
+    body: string;
+    deadlineTitle: string;
+    dueDateStr: string;
+    description: string;
+    type?: string;
+    relatedDeadlineId?: string;
+  }) {
+    const {
+      userId,
+      title,
+      body,
+      deadlineTitle,
+      dueDateStr,
+      description,
+      type = 'DEADLINE',
+      relatedDeadlineId,
+    } = params;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) return { success: false };
+
+    try {
+      // 1. Create DB Notification record
+      await prisma.notification.create({
+        data: {
+          userId: user.id,
+          title,
+          body,
+          type,
+          relatedDeadlineId,
+        },
+      });
+
+      // 2. Fetch push tokens for the user and send FCM Push
+      const userPushTokens = await prisma.pushToken.findMany({
+        where: { userId: user.id },
+      });
+
+      if (userPushTokens.length > 0) {
+        const tokens = userPushTokens.map((t) => t.fcmToken);
+        await FirebaseService.broadcastPush(tokens, title, body, {
+          type,
+          deadlineTitle,
+          relatedDeadlineId: relatedDeadlineId || '',
+        });
+      }
+
+      // 3. Send email via Resend
+      await EmailService.sendDeadlineReminder(
+        user.email,
+        user.fullName,
+        deadlineTitle,
+        dueDateStr,
+        description
+      );
+    } catch (err) {
+      console.error(`Failed to notify user ${user.id} (${user.email}):`, err);
+    }
+
+    return { success: true };
+  }
 }
+

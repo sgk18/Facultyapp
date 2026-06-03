@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
+import 'package:haptic_feedback/haptic_feedback.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../auth/presentation/auth_notifier.dart';
@@ -421,9 +422,14 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
           ),
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppTheme.error),
-            onPressed: () {
+            onPressed: () async {
               ref.read(deadlinesProvider.notifier).deleteDeadline(deadlineId);
               Navigator.pop(ctx);
+              try {
+                if (await Haptics.canVibrate()) {
+                  await Haptics.vibrate(HapticsType.warning);
+                }
+              } catch (_) {}
             },
             child: const Text('Delete'),
           ),
@@ -655,6 +661,11 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                     departmentId: finalDeptId,
                                     addToGoogleCalendar: addToGoogleCalendar,
                                   );
+                                  try {
+                                    if (await Haptics.canVibrate()) {
+                                      await Haptics.vibrate(HapticsType.success);
+                                    }
+                                  } catch (_) {}
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
@@ -674,6 +685,11 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                       'departmentId': finalDeptId,
                                     },
                                   );
+                                  try {
+                                    if (await Haptics.canVibrate()) {
+                                      await Haptics.vibrate(HapticsType.success);
+                                    }
+                                  } catch (_) {}
                                   if (context.mounted) {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
