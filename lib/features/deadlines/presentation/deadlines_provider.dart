@@ -2,6 +2,9 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/network/api_client.dart';
 import '../../auth/presentation/auth_notifier.dart';
+import '../../notifications/presentation/notifications_provider.dart';
+import '../../reminders/presentation/reminders_provider.dart';
+import '../../calendar/presentation/calendar_provider.dart';
 
 class Deadline {
   final String id;
@@ -12,6 +15,7 @@ class Deadline {
   final String departmentId;
   final String createdById;
   final bool isCompleted;
+  final String status;
   final String? createdByFullName;
   final String? departmentName;
 
@@ -24,6 +28,7 @@ class Deadline {
     required this.departmentId,
     required this.createdById,
     required this.isCompleted,
+    required this.status,
     this.createdByFullName,
     this.departmentName,
   });
@@ -38,6 +43,7 @@ class Deadline {
       departmentId: json['departmentId'],
       createdById: json['ownerId'] ?? '',
       isCompleted: json['isCompleted'] ?? false,
+      status: json['status'] ?? 'ACTIVE',
       createdByFullName: json['owner']?['fullName'],
       departmentName: json['department']?['name'],
     );
@@ -71,6 +77,7 @@ class DeadlinesNotifier extends StateNotifier<AsyncValue<List<Deadline>>> {
     required String priority,
     required String departmentId,
     bool addToGoogleCalendar = false,
+    List<String>? reminderSettings,
   }) async {
     await _ref.read(apiClientProvider).post(
       '/deadlines',
@@ -81,9 +88,15 @@ class DeadlinesNotifier extends StateNotifier<AsyncValue<List<Deadline>>> {
         'priority': priority,
         'departmentId': departmentId,
         'addToGoogleCalendar': addToGoogleCalendar,
+        if (reminderSettings != null) 'reminderSettings': reminderSettings,
       },
     );
-    await fetchDeadlines();
+    await Future.wait([
+      fetchDeadlines(),
+      _ref.read(notificationsProvider.notifier).fetchNotifications(),
+      _ref.read(remindersProvider.notifier).fetchReminders(),
+      _ref.read(calendarEventsProvider.notifier).fetchCalendarEvents(),
+    ]);
   }
 
   Future<void> updateDeadline(String id, Map<String, dynamic> data) async {
@@ -91,12 +104,22 @@ class DeadlinesNotifier extends StateNotifier<AsyncValue<List<Deadline>>> {
       '/deadlines/$id',
       data: data,
     );
-    await fetchDeadlines();
+    await Future.wait([
+      fetchDeadlines(),
+      _ref.read(notificationsProvider.notifier).fetchNotifications(),
+      _ref.read(remindersProvider.notifier).fetchReminders(),
+      _ref.read(calendarEventsProvider.notifier).fetchCalendarEvents(),
+    ]);
   }
 
   Future<void> deleteDeadline(String id) async {
     await _ref.read(apiClientProvider).delete('/deadlines/$id');
-    await fetchDeadlines();
+    await Future.wait([
+      fetchDeadlines(),
+      _ref.read(notificationsProvider.notifier).fetchNotifications(),
+      _ref.read(remindersProvider.notifier).fetchReminders(),
+      _ref.read(calendarEventsProvider.notifier).fetchCalendarEvents(),
+    ]);
   }
 
   void _subscribeRealtime() {

@@ -77,7 +77,7 @@ class MainScaffold extends StatelessWidget {
             NavigationDestination(
               icon: Icon(Icons.calendar_month_outlined),
               selectedIcon: Icon(Icons.calendar_month, color: AppTheme.primary),
-              label: 'Schedule',
+              label: 'Calendar',
             ),
             NavigationDestination(
               icon: Icon(Icons.notifications_none_outlined),

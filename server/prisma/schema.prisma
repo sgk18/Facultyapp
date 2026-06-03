@@ -21,11 +21,7 @@ enum Priority {
   LOW
 }
 
-enum Visibility {
-  PRIVATE
-  DEPARTMENT
-  PUBLIC
-}
+
 
 model Department {
   id        String     @id @default(uuid()) @db.Uuid
@@ -66,20 +62,22 @@ model User {
 }
 
 model Deadline {
-  id           String         @id @default(uuid()) @db.Uuid
-  title        String
-  description  String
-  dueDate      DateTime       @map("due_date")
-  priority     Priority       @default(MEDIUM)
-  ownerId      String         @db.Uuid @map("owner_id")
-  owner        User           @relation("CreatedDeadlines", fields: [ownerId], references: [id], onDelete: Cascade)
-  departmentId String         @db.Uuid @map("department_id")
-  department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  isCompleted  Boolean        @default(false) @map("is_completed")
-  notifications Notification[]
-  createdAt    DateTime       @default(now()) @map("created_at")
-  updatedAt    DateTime       @updatedAt @map("updated_at")
-  visibility   Visibility     @default(PRIVATE)
+  id             String          @id @default(uuid()) @db.Uuid
+  title          String
+  description    String
+  dueDate        DateTime        @map("due_date")
+  priority       Priority        @default(MEDIUM)
+  ownerId        String          @db.Uuid @map("owner_id")
+  owner          User            @relation("CreatedDeadlines", fields: [ownerId], references: [id], onDelete: Cascade)
+  departmentId   String          @db.Uuid @map("department_id")
+  department     Department      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isCompleted    Boolean         @default(false) @map("is_completed")
+  status         String          @default("ACTIVE")
+  notifications  Notification[]
+  reminders      Reminder[]
+  calendarEvents CalendarEvent[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   @@map("deadlines")
 }
@@ -136,6 +134,8 @@ model CalendarEvent {
   endTime       DateTime @map("end_time")
   eventType     String   @default("GENERAL") @map("event_type")
   source        String   @default("APP") // "APP" or "GOOGLE"
+  deadlineId    String?  @db.Uuid @map("deadline_id")
+  deadline      Deadline? @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
@@ -151,6 +151,8 @@ model Reminder {
   reminderTime DateTime @map("reminder_time")
   repeatType   String   @default("NONE") @map("repeat_type")
   status       String   @default("PENDING") // "PENDING", "SENT", "DISMISSED"
+  deadlineId   String?  @db.Uuid @map("deadline_id")
+  deadline     Deadline? @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 

@@ -4,8 +4,10 @@ class UserModel {
   final String fullName;
   final String role;
   final String? departmentId;
+  final String? departmentName;
   final String? avatarUrl;
   final String? supabaseUserId;
+  final String? employeeCode;
 
   UserModel({
     required this.id,
@@ -13,8 +15,10 @@ class UserModel {
     required this.fullName,
     required this.role,
     this.departmentId,
+    this.departmentName,
     this.avatarUrl,
     this.supabaseUserId,
+    this.employeeCode,
   });
 
   /// Returns the first two characters of the full name for avatar initials.
@@ -32,6 +36,10 @@ class UserModel {
     final departmentId = json['departmentId'] as String? ??
         json['department_id'] as String? ??
         (json['department'] as Map<String, dynamic>?)?['id'] as String?;
+    final departmentName = json['departmentName'] as String? ??
+        json['department_name'] as String? ??
+        (json['department'] as Map<String, dynamic>?)?['name'] as String?;
+    final employeeCode = json['employeeCode'] as String? ?? json['employee_code'] as String?;
 
     return UserModel(
       id: json['id'] as String,
@@ -39,8 +47,10 @@ class UserModel {
       fullName: fullName,
       role: json['role'] as String? ?? 'FACULTY',
       departmentId: departmentId,
+      departmentName: departmentName,
       avatarUrl: json['avatarUrl'] as String? ?? json['avatar_url'] as String?,
       supabaseUserId: json['supabaseUserId'] as String? ?? json['supabase_user_id'] as String?,
+      employeeCode: employeeCode,
     );
   }
 
@@ -51,8 +61,10 @@ class UserModel {
       'fullName': fullName,
       'role': role,
       'departmentId': departmentId,
+      'departmentName': departmentName,
       'avatarUrl': avatarUrl,
       'supabaseUserId': supabaseUserId,
+      'employeeCode': employeeCode,
     };
   }
 }

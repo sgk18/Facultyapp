@@ -1,8 +1,13 @@
--- 1. Rename created_by to owner_id in deadlines table
-ALTER TABLE IF EXISTS "deadlines" RENAME COLUMN "created_by" TO "owner_id";
+-- 1. Rename created_by to owner_id in deadlines table safely
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='deadlines' AND column_name='created_by') THEN
+    ALTER TABLE "deadlines" RENAME COLUMN "created_by" TO "owner_id";
+  END IF;
+END $$;
 
--- 2. Add visibility column to deadlines table
-ALTER TABLE IF EXISTS "deadlines" ADD COLUMN IF NOT EXISTS "visibility" TEXT NOT NULL DEFAULT 'PRIVATE';
+-- 2. Drop visibility column if exists
+ALTER TABLE IF EXISTS "deadlines" DROP COLUMN IF EXISTS "visibility";
 
 -- 3. Enable RLS on all relevant tables
 ALTER TABLE "deadlines" ENABLE ROW LEVEL SECURITY;

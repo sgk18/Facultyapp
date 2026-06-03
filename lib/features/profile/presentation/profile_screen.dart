@@ -19,8 +19,9 @@ class ProfileScreen extends ConsumerWidget {
     
     final facultyName = user?.fullName ?? 'Faculty Member';
     final facultyEmail = user?.email ?? 'faculty.member@christuniversity.in';
-    const departmentName = 'Department of Computer Science';
+    final departmentName = user?.departmentName ?? 'Department of Computer Science';
     final roleName = user?.role ?? 'FACULTY';
+    final employeeCode = user?.employeeCode ?? 'Not Assigned';
 
     return Scaffold(
       appBar: AppBar(
@@ -92,7 +93,7 @@ class ProfileScreen extends ConsumerWidget {
                   const Divider(height: 1),
                   _buildProfileField(Icons.domain_outlined, 'Department', departmentName),
                   const Divider(height: 1),
-                  _buildProfileField(Icons.shield_outlined, 'Portal Permissions', roleName),
+                  _buildProfileField(Icons.badge_outlined, 'Employee Code', employeeCode),
                 ],
               ),
             ),
