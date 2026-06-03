@@ -31,7 +31,7 @@ class AppTheme {
   // Soft Shadows
   static List<BoxShadow> softShadow = [
     BoxShadow(
-      color: Colors.black.withOpacity(0.04),
+      color: Colors.black.withValues(alpha: 0.04),
       blurRadius: 16,
       offset: const Offset(0, 4),
     ),
@@ -39,7 +39,7 @@ class AppTheme {
 
   static List<BoxShadow> premiumShadow = [
     BoxShadow(
-      color: const Color(0xFF0147AD).withOpacity(0.08),
+      color: const Color(0xFF0147AD).withValues(alpha: 0.08),
       blurRadius: 24,
       offset: const Offset(0, 8),
     ),
@@ -77,7 +77,7 @@ class AppTheme {
           color: secondaryText,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: white,
         elevation: 0,
         shape: RoundedRectangleBorder(

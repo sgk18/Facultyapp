@@ -50,7 +50,7 @@ class MainScaffold extends StatelessWidget {
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 20,
               offset: const Offset(0, -4),
             ),
@@ -60,7 +60,7 @@ class MainScaffold extends StatelessWidget {
           selectedIndex: selectedIndex,
           onDestinationSelected: (index) => _onItemTapped(index, context),
           backgroundColor: Colors.white,
-          indicatorColor: AppTheme.primary.withOpacity(0.1),
+          indicatorColor: AppTheme.primary.withValues(alpha: 0.1),
           height: 72,
           elevation: 0,
           destinations: const [

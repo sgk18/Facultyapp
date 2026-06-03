@@ -22,10 +22,10 @@ class SplashScreen extends ConsumerWidget {
                 width: 90,
                 height: 90,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.white.withOpacity(0.5),
+                    color: Colors.white.withValues(alpha: 0.5),
                     width: 2,
                   ),
                 ),

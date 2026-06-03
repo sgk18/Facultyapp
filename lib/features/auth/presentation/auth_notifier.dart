@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -38,7 +37,7 @@ class AuthState {
   }
 }
 
-class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
+class AuthNotifier extends StateNotifier<AuthState> {
   final Ref _ref;
 
   AuthNotifier(this._ref) : super(AuthState()) {
@@ -65,7 +64,6 @@ class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
     } catch (e) {
       state = AuthState(isInitializing: false);
     }
-    notifyListeners();
   }
 
   void _listenToAuthChanges() {
@@ -103,7 +101,6 @@ class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
         token: token,
         user: user,
       );
-      notifyListeners();
       return true;
     } on DioException catch (e) {
       final message = e.response?.data['error'] ?? 'Access restricted. Authentication failed.';
@@ -141,7 +138,6 @@ class AuthNotifier extends StateNotifier<AuthState> with ChangeNotifier {
     } catch (_) {}
 
     state = AuthState(isInitializing: false);
-    notifyListeners();
   }
 }
 

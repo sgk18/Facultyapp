@@ -31,10 +31,10 @@ class GlassCard extends StatelessWidget {
       padding: padding ?? const EdgeInsets.all(20),
       margin: margin,
       decoration: BoxDecoration(
-        color: backgroundColor ?? Colors.white.withOpacity(0.85),
+        color: backgroundColor ?? Colors.white.withValues(alpha: 0.85),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: borderColor ?? Colors.white.withOpacity(0.6),
+          color: borderColor ?? Colors.white.withValues(alpha: 0.6),
           width: 1.5,
         ),
         boxShadow: AppTheme.softShadow,

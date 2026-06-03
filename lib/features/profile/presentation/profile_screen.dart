@@ -15,7 +15,7 @@ class ProfileScreen extends ConsumerWidget {
     
     final facultyName = user?.fullName ?? 'Faculty Member';
     final facultyEmail = user?.email ?? 'faculty.member@christuniversity.in';
-    final departmentName = 'Department of Computer Science';
+    const departmentName = 'Department of Computer Science';
     final roleName = user?.role ?? 'FACULTY';
 
     return Scaffold(
@@ -46,7 +46,7 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                     child: Center(
                       child: Text(
-                        facultyName.isNotEmpty ? facultyName.substring(0, 2).toUpperCase() : 'FC',
+                        user?.initials ?? 'FC',
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
@@ -67,7 +67,7 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: 4),
                   Text(
                     roleName,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppTheme.primary,
                       fontWeight: FontWeight.w600,
@@ -100,7 +100,7 @@ class ProfileScreen extends ConsumerWidget {
               height: 56,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: AppTheme.error.withOpacity(0.5)),
+                  side: BorderSide(color: AppTheme.error.withValues(alpha: 0.5)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   foregroundColor: AppTheme.error,
                 ),

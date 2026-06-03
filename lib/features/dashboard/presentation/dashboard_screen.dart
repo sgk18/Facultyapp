@@ -14,7 +14,6 @@ class DashboardScreen extends ConsumerWidget {
     final authState = ref.watch(authNotifierProvider);
     final user = authState.user;
     final facultyName = user?.fullName ?? 'Faculty Member';
-    final deptName = 'Department of Computer Science';
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -40,7 +39,7 @@ class DashboardScreen extends ConsumerWidget {
                           Text(
                             'Good Morning,',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.85),
+                              color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 16,
                             ),
                           ),
@@ -57,7 +56,7 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
+                          color: Colors.white.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
@@ -72,9 +71,9 @@ class DashboardScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.white.withOpacity(0.15)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -245,7 +244,7 @@ class DashboardScreen extends ConsumerWidget {
         Text(
           label,
           style: TextStyle(
-            color: Colors.white.withOpacity(0.75),
+            color: Colors.white.withValues(alpha: 0.75),
             fontSize: 12,
           ),
         ),

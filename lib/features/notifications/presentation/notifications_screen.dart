@@ -53,7 +53,7 @@ class NotificationsScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: GlassCard(
-        backgroundColor: isUnread ? AppTheme.primary.withOpacity(0.04) : Colors.white,
+        backgroundColor: isUnread ? AppTheme.primary.withValues(alpha: 0.04) : Colors.white,
         padding: const EdgeInsets.all(20),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +61,7 @@ class NotificationsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: isUnread ? AppTheme.primary.withOpacity(0.1) : Colors.grey.shade100,
+                color: isUnread ? AppTheme.primary.withValues(alpha: 0.1) : Colors.grey.shade100,
                 shape: BoxShape.circle,
               ),
               child: Icon(
