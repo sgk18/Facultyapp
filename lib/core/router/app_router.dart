@@ -14,6 +14,7 @@ import '../../features/navigation/presentation/main_scaffold.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
 import '../../features/splash/presentation/splash_controller.dart';
+import 'router_guard.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 
@@ -70,42 +71,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       );
     },
     redirect: (context, state) {
-      final authState = ref.read(authNotifierProvider);
+      final authNotifierState = ref.read(authNotifierProvider);
       final splashFinished = ref.read(splashFinishedProvider);
-      
-      final isLoggingIn = state.matchedLocation == '/login';
-      final isSplash = state.matchedLocation == '/splash';
-      final isAuthCallback = state.matchedLocation == '/auth/callback';
-      
-      final isAuthenticated = authState.isAuthenticated;
-      final isInitializing = authState.isInitializing;
-
-      // Keep user on splash screen until splash controller completes
-      if (!isSplash && !splashFinished) {
-        return '/splash';
-      }
-
-      if (isInitializing) {
-        return isSplash ? null : '/splash';
-      }
-
-      if (!isAuthenticated) {
-        return (isLoggingIn || isAuthCallback) ? null : '/login';
-      }
-
-      // Check onboarding status (profile setup)
-      // If departmentId is null, we treat it as onboarding incomplete and redirect to /profile
-      final onboardingIncomplete = authState.user?.departmentId == null;
-
-      if (onboardingIncomplete) {
-        return state.matchedLocation == '/profile' ? null : '/profile';
-      }
-
-      if (isLoggingIn || isSplash || isAuthCallback) {
-        return '/dashboard';
-      }
-
-      return null;
+      return RouterGuard.redirect(
+        context,
+        state,
+        authNotifierState.authState,
+        splashFinished,
+      );
     },
     routes: [
       GoRoute(

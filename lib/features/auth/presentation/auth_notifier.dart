@@ -6,14 +6,15 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/user_model.dart';
+import '../domain/auth_state.dart';
 
-class AuthState {
+class AuthNotifierState {
   final bool isInitializing;
   final UserModel? user;
   final String? token;
   final String? errorMessage;
 
-  AuthState({
+  AuthNotifierState({
     this.isInitializing = true,
     this.user,
     this.token,
@@ -22,13 +23,28 @@ class AuthState {
 
   bool get isAuthenticated => user != null && token != null;
 
-  AuthState copyWith({
+  AppAuthState get authState {
+    if (isInitializing) {
+      return AppAuthState.loading;
+    }
+    if (user == null || token == null) {
+      return AppAuthState.unauthenticated;
+    }
+    // Check onboarding status (profile setup)
+    // If departmentId is null or empty, onboarding is considered incomplete
+    if (user?.departmentId == null || user!.departmentId!.isEmpty) {
+      return AppAuthState.onboarding;
+    }
+    return AppAuthState.authenticated;
+  }
+
+  AuthNotifierState copyWith({
     bool? isInitializing,
     UserModel? user,
     String? token,
     String? errorMessage,
   }) {
-    return AuthState(
+    return AuthNotifierState(
       isInitializing: isInitializing ?? this.isInitializing,
       user: user ?? this.user,
       token: token ?? this.token,
@@ -37,10 +53,10 @@ class AuthState {
   }
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
+class AuthNotifier extends StateNotifier<AuthNotifierState> {
   final Ref _ref;
 
-  AuthNotifier(this._ref) : super(AuthState()) {
+  AuthNotifier(this._ref) : super(AuthNotifierState()) {
     _loadSession();
     _listenToAuthChanges();
   }
@@ -53,16 +69,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (token != null && userDataStr != null) {
         final userData = jsonDecode(userDataStr) as Map<String, dynamic>;
-        state = AuthState(
+        state = AuthNotifierState(
           isInitializing: false,
           token: token,
           user: UserModel.fromJson(userData),
         );
       } else {
-        state = AuthState(isInitializing: false);
+        state = AuthNotifierState(isInitializing: false);
       }
     } catch (e) {
-      state = AuthState(isInitializing: false);
+      state = AuthNotifierState(isInitializing: false);
     }
   }
 
@@ -96,7 +112,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       await secureStorage.write(key: AppConstants.userKey, value: jsonEncode(userMap));
 
-      state = AuthState(
+      state = AuthNotifierState(
         isInitializing: false,
         token: token,
         user: user,
@@ -141,10 +157,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       await Supabase.instance.client.auth.signOut();
     } catch (_) {}
 
-    state = AuthState(isInitializing: false);
+    state = AuthNotifierState(isInitializing: false);
   }
 }
 
-final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+final authNotifierProvider = StateNotifierProvider<AuthNotifier, AuthNotifierState>((ref) {
   return AuthNotifier(ref);
 });

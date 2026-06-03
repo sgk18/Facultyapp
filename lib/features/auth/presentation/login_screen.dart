@@ -17,7 +17,7 @@ class LoginScreen extends HookConsumerWidget {
     final isLoading = useState(false);
 
     // Listen to error states to show feedback
-    ref.listen<AuthState>(authNotifierProvider, (previous, next) {
+    ref.listen<AuthNotifierState>(authNotifierProvider, (previous, next) {
       if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
