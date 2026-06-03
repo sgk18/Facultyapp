@@ -36,48 +36,51 @@ model Department {
 }
 
 model User {
-  id             String         @id @default(uuid()) @db.Uuid
-  supabaseUserId String         @unique @db.Uuid @map("supabase_user_id")
-  email          String         @unique
-  fullName       String         @map("full_name")
-  role           Role           @default(FACULTY)
-  departmentId   String         @db.Uuid @map("department_id")
-  department     Department     @relation(fields: [departmentId], references: [id])
-  avatarUrl      String?        @map("avatar_url")
-  deadlines      Deadline[]     @relation("CreatedDeadlines")
-  notifications  Notification[]
-  pushTokens     PushToken[]
-  createdAt      DateTime       @default(now()) @map("created_at")
-  updatedAt      DateTime       @updatedAt @map("updated_at")
-  
-  // New fields appended to the end
-  employeeCode   String?        @map("employee_code")
-  isSuspended    Boolean        @default(false) @map("is_suspended")
-  googleAccount  GoogleAccount?
-  calendarEvents CalendarEvent[]
-  reminders      Reminder[]
-  auditLogs      AuditLog[]
+  id                  String         @id @default(uuid()) @db.Uuid
+  supabaseUserId      String         @unique @db.Uuid @map("supabase_user_id")
+  email               String         @unique
+  fullName            String         @map("full_name")
+  role                Role           @default(FACULTY)
+  departmentId        String         @db.Uuid @map("department_id")
+  department          Department     @relation(fields: [departmentId], references: [id])
+  avatarUrl           String?        @map("avatar_url")
+  deadlines           Deadline[]     @relation("CreatedDeadlines")
+  notifications       Notification[]
+  createdAt           DateTime       @default(now()) @map("created_at")
+  updatedAt           DateTime       @updatedAt @map("updated_at")
+  employeeCode        String?        @map("employee_code")
+  isSuspended         Boolean        @default(false) @map("is_suspended")
+  gmailSyncEnabled    Boolean        @default(false) @map("gmail_sync_enabled")
+  calendarSyncEnabled Boolean        @default(false) @map("calendar_sync_enabled")
+  notificationEnabled Boolean        @default(true) @map("notification_enabled")
+  fcmToken            String?        @map("fcm_token")
+  platform            String?        @map("platform")
+  googleId            String?        @unique @map("google_id")
+  auditLogs           AuditLog[]
 
   @@map("users")
 }
 
 model Deadline {
-  id             String          @id @default(uuid()) @db.Uuid
-  title          String
-  description    String
-  dueDate        DateTime        @map("due_date")
-  priority       Priority        @default(MEDIUM)
-  ownerId        String          @db.Uuid @map("owner_id")
-  owner          User            @relation("CreatedDeadlines", fields: [ownerId], references: [id], onDelete: Cascade)
-  departmentId   String          @db.Uuid @map("department_id")
-  department     Department      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
-  isCompleted    Boolean         @default(false) @map("is_completed")
-  status         String          @default("ACTIVE")
-  notifications  Notification[]
-  reminders      Reminder[]
-  calendarEvents CalendarEvent[]
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  id              String          @id @default(uuid()) @db.Uuid
+  title           String
+  description     String
+  dueDate         DateTime        @map("due_date")
+  priority        Priority        @default(MEDIUM)
+  ownerId         String          @db.Uuid @map("owner_id")
+  owner           User            @relation("CreatedDeadlines", fields: [ownerId], references: [id], onDelete: Cascade)
+  departmentId    String          @db.Uuid @map("department_id")
+  department      Department      @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isCompleted     Boolean         @default(false) @map("is_completed")
+  status          String          @default("ACTIVE")
+  notifications   Notification[]
+  reminderEnabled Boolean         @default(false) @map("reminder_enabled")
+  reminderTime    DateTime?       @map("reminder_time")
+  repeatType      String?         @map("repeat_type")
+  syncToCalendar  Boolean         @default(false) @map("sync_to_calendar")
+  googleEventId   String?         @unique @map("google_event_id")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
   @@map("deadlines")
 }
@@ -95,68 +98,6 @@ model Notification {
   createdAt         DateTime  @default(now()) @map("created_at")
 
   @@map("notifications")
-}
-
-model PushToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fcmToken  String   @unique @map("fcm_token")
-  platform  String   @map("platform")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("push_tokens")
-}
-
-model GoogleAccount {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @unique @db.Uuid @map("user_id")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  googleId     String   @unique @map("google_id")
-  accessToken  String   @map("access_token")
-  refreshToken String?  @map("refresh_token")
-  syncGmail    Boolean  @default(false) @map("sync_gmail")
-  syncCalendar Boolean  @default(false) @map("sync_calendar")
-  connectedAt  DateTime @default(now()) @map("connected_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@map("google_accounts")
-}
-
-model CalendarEvent {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @db.Uuid @map("user_id")
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  googleEventId String?  @unique @map("google_event_id")
-  title         String
-  description   String?
-  startTime     DateTime @map("start_time")
-  endTime       DateTime @map("end_time")
-  eventType     String   @default("GENERAL") @map("event_type")
-  source        String   @default("APP") // "APP" or "GOOGLE"
-  deadlineId    String?  @db.Uuid @map("deadline_id")
-  deadline      Deadline? @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  @@map("calendar_events")
-}
-
-model Reminder {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid @map("user_id")
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title        String
-  description  String?
-  reminderTime DateTime @map("reminder_time")
-  repeatType   String   @default("NONE") @map("repeat_type")
-  status       String   @default("PENDING") // "PENDING", "SENT", "DISMISSED"
-  deadlineId   String?  @db.Uuid @map("deadline_id")
-  deadline     Deadline? @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-
-  @@map("reminders")
 }
 
 model AuditLog {

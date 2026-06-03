@@ -65,20 +65,15 @@ export class UserService {
       throw new NotFoundError('User profile not found');
     }
 
-    const token = await prisma.pushToken.upsert({
-      where: { fcmToken },
-      update: {
-        userId,
-        platform,
-      },
-      create: {
-        userId,
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
         fcmToken,
         platform,
       },
     });
 
-    return token;
+    return updatedUser;
   }
 
   /**

@@ -102,14 +102,14 @@ class CalendarEventsNotifier extends StateNotifier<AsyncValue<List<CalendarEvent
     if (user == null) return;
 
     _channel = Supabase.instance.client
-        .channel('public:calendar_events')
+        .channel('public:deadlines_calendar')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
-          table: 'calendar_events',
+          table: 'deadlines',
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
-            column: 'user_id',
+            column: 'owner_id',
             value: user.id,
           ),
           callback: (payload) {

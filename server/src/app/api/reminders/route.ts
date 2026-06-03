@@ -2,7 +2,6 @@ import { NextRequest } from 'next/server';
 import { withErrorHandler, sendSuccess, ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors';
 import { requireAuth } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
-import { GoogleClient } from '@/lib/google';
 
 /**
  * GET retrieve user's reminders
@@ -18,17 +17,28 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     const skip = (page - 1) * limit;
 
     const [reminders, total] = await Promise.all([
-      prisma.reminder.findMany({
-        where: { userId: user.id },
+      prisma.deadline.findMany({
+        where: { ownerId: user.id, reminderEnabled: true },
         skip,
         take: limit,
         orderBy: { reminderTime: 'asc' },
       }),
-      prisma.reminder.count({ where: { userId: user.id } }),
+      prisma.deadline.count({ where: { ownerId: user.id, reminderEnabled: true } }),
     ]);
 
+    const items = reminders.map((r) => ({
+      id: r.id,
+      userId: r.ownerId,
+      title: r.title,
+      description: r.description,
+      reminderTime: r.reminderTime,
+      repeatType: r.repeatType || 'NONE',
+      status: r.status,
+      createdAt: r.createdAt,
+    }));
+
     return sendSuccess({
-      items: reminders,
+      items,
       pagination: {
         page,
         limit,
@@ -38,16 +48,27 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }, 'Reminders retrieved successfully');
   }
 
-  const reminders = await prisma.reminder.findMany({
-    where: { userId: user.id },
+  const reminders = await prisma.deadline.findMany({
+    where: { ownerId: user.id, reminderEnabled: true },
     orderBy: { reminderTime: 'asc' },
   });
 
-  return sendSuccess(reminders, 'Reminders retrieved successfully');
+  const items = reminders.map((r) => ({
+    id: r.id,
+    userId: r.ownerId,
+    title: r.title,
+    description: r.description,
+    reminderTime: r.reminderTime,
+    repeatType: r.repeatType || 'NONE',
+    status: r.status,
+    createdAt: r.createdAt,
+  }));
+
+  return sendSuccess(items, 'Reminders retrieved successfully');
 });
 
 /**
- * POST create a new reminder
+ * POST create a new reminder (saved as a Deadline with reminder_enabled = true)
  */
 export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
@@ -62,55 +83,54 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     throw new ValidationError('Invalid date format for reminderTime');
   }
 
-  const reminder = await prisma.reminder.create({
+  // Fetch the user's department to link the new consolidated deadline
+  const userRecord = await prisma.user.findUnique({
+    where: { id: user.id },
+  });
+
+  if (!userRecord) {
+    throw new NotFoundError('User profile not found');
+  }
+
+  const reminder = await prisma.deadline.create({
     data: {
-      userId: user.id,
+      ownerId: user.id,
+      departmentId: userRecord.departmentId,
       title: body.title,
       description: body.description || null,
+      dueDate: reminderTime, // consolidated due_date is set to the reminder time
+      reminderEnabled: true,
       reminderTime,
       repeatType: body.repeatType || 'NONE',
       status: 'PENDING',
+      syncToCalendar: body.addToGoogleCalendar || false,
     },
   });
 
-  // Handle Google Calendar sync if requested
-  if (body.addToGoogleCalendar) {
-    const account = await prisma.googleAccount.findUnique({
-      where: { userId: user.id },
-    });
-    if (!account) {
-      throw new ValidationError('Google account is not connected. Please connect it first.');
-    }
-    if (!account.syncCalendar) {
-      await prisma.googleAccount.update({
-        where: { userId: user.id },
-        data: { syncCalendar: true },
-      });
-    }
-
-    await prisma.calendarEvent.create({
-      data: {
-        userId: user.id,
-        title: `Reminder: ${reminder.title}`,
-        description: reminder.description || 'Academic Reminder',
-        startTime: reminder.reminderTime,
-        endTime: new Date(reminder.reminderTime.getTime() + 30 * 60 * 1000), // 30 mins duration
-        eventType: 'REMINDER',
-        source: 'APP',
-      },
-    });
-
+  // Mock Google Calendar sync trigger if requested
+  if (reminder.syncToCalendar) {
     const { SyncService } = require('@/services/sync.service');
     SyncService.syncCalendarForUser(user.id).catch((err: any) => {
       console.error('Failed to sync new reminder to Google Calendar:', err);
     });
   }
 
-  return sendSuccess(reminder, 'Reminder created successfully');
+  const mappedReminder = {
+    id: reminder.id,
+    userId: reminder.ownerId,
+    title: reminder.title,
+    description: reminder.description,
+    reminderTime: reminder.reminderTime,
+    repeatType: reminder.repeatType || 'NONE',
+    status: reminder.status,
+    createdAt: reminder.createdAt,
+  };
+
+  return sendSuccess(mappedReminder, 'Reminder created successfully');
 });
 
 /**
- * PATCH update reminder status (e.g. dismissing a reminder)
+ * PATCH update reminder status
  */
 export const PATCH = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
@@ -125,7 +145,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     throw new ValidationError(`status must be one of: ${allowedStatuses.join(', ')}`);
   }
 
-  const reminder = await prisma.reminder.findUnique({
+  const reminder = await prisma.deadline.findUnique({
     where: { id: body.id },
   });
 
@@ -133,50 +153,35 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     throw new NotFoundError('Reminder not found');
   }
 
-  if (reminder.userId !== user.id) {
+  if (reminder.ownerId !== user.id) {
     throw new ForbiddenError('You do not own this reminder');
   }
 
-  // If status is updated to CANCELLED, remove linked Google Calendar event
-  if (body.status === 'CANCELLED') {
-    const calendarEvent = await prisma.calendarEvent.findFirst({
-      where: {
-        userId: user.id,
-        eventType: 'REMINDER',
-        title: `Reminder: ${reminder.title}`,
-        startTime: reminder.reminderTime,
-      },
-    });
-
-    if (calendarEvent) {
-      if (calendarEvent.googleEventId) {
-        try {
-          const { SyncService } = require('@/services/sync.service');
-          const token = await SyncService.getActiveAccessToken(user.id);
-          if (token) {
-            await GoogleClient.deleteCalendarEvent(token, calendarEvent.googleEventId);
-          }
-        } catch (err) {
-          console.error('Failed to delete Google Calendar event:', err);
-        }
-      }
-
-      await prisma.calendarEvent.delete({
-        where: { id: calendarEvent.id },
-      }).catch((err) => {
-        console.error('Failed to delete local CalendarEvent record:', err);
-      });
-    }
-  }
-
-  const updated = await prisma.reminder.update({
+  const updated = await prisma.deadline.update({
     where: { id: body.id },
-    data: { status: body.status },
+    data: { 
+      status: body.status,
+      isCompleted: body.status === 'COMPLETED',
+    },
   });
 
-  return sendSuccess(updated, 'Reminder updated successfully');
+  const mappedReminder = {
+    id: updated.id,
+    userId: updated.ownerId,
+    title: updated.title,
+    description: updated.description,
+    reminderTime: updated.reminderTime,
+    repeatType: updated.repeatType || 'NONE',
+    status: updated.status,
+    createdAt: updated.createdAt,
+  };
+
+  return sendSuccess(mappedReminder, 'Reminder updated successfully');
 });
 
+/**
+ * DELETE delete a reminder
+ */
 export const DELETE = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
   const { searchParams } = new URL(req.url);
@@ -186,7 +191,7 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
     throw new ValidationError('id query parameter is required');
   }
 
-  const reminder = await prisma.reminder.findUnique({
+  const reminder = await prisma.deadline.findUnique({
     where: { id },
   });
 
@@ -194,41 +199,11 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
     throw new NotFoundError('Reminder not found');
   }
 
-  if (reminder.userId !== user.id) {
+  if (reminder.ownerId !== user.id) {
     throw new ForbiddenError('You do not own this reminder');
   }
 
-  // Find linked calendar event if any
-  const calendarEvent = await prisma.calendarEvent.findFirst({
-    where: {
-      userId: user.id,
-      eventType: 'REMINDER',
-      title: `Reminder: ${reminder.title}`,
-      startTime: reminder.reminderTime,
-    },
-  });
-
-  if (calendarEvent) {
-    if (calendarEvent.googleEventId) {
-      try {
-        const { SyncService } = require('@/services/sync.service');
-        const token = await SyncService.getActiveAccessToken(user.id);
-        if (token) {
-          await GoogleClient.deleteCalendarEvent(token, calendarEvent.googleEventId);
-        }
-      } catch (err) {
-        console.error('Failed to delete Google Calendar event:', err);
-      }
-    }
-
-    await prisma.calendarEvent.delete({
-      where: { id: calendarEvent.id },
-    }).catch((err) => {
-      console.error('Failed to delete local CalendarEvent record:', err);
-    });
-  }
-
-  await prisma.reminder.delete({
+  await prisma.deadline.delete({
     where: { id },
   });
 

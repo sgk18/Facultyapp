@@ -98,14 +98,9 @@ export class NotificationService {
           },
         });
 
-        // 2. Fetch push tokens for the user and send FCM Push
-        const userPushTokens = await prisma.pushToken.findMany({
-          where: { userId: user.id },
-        });
-
-        if (userPushTokens.length > 0) {
-          const tokens = userPushTokens.map((t) => t.fcmToken);
-          await FirebaseService.broadcastPush(tokens, title, body, {
+        // 2. Send FCM Push if FCM token exists
+        if (user.fcmToken) {
+          await FirebaseService.broadcastPush([user.fcmToken], title, body, {
             type,
             deadlineTitle,
             relatedDeadlineId: relatedDeadlineId || '',
@@ -175,14 +170,9 @@ export class NotificationService {
         },
       });
 
-      // 2. Fetch push tokens for the user and send FCM Push
-      const userPushTokens = await prisma.pushToken.findMany({
-        where: { userId: user.id },
-      });
-
-      if (userPushTokens.length > 0) {
-        const tokens = userPushTokens.map((t) => t.fcmToken);
-        await FirebaseService.broadcastPush(tokens, title, body, {
+      // 2. Send FCM Push if FCM token exists
+      if (user.fcmToken) {
+        await FirebaseService.broadcastPush([user.fcmToken], title, body, {
           type,
           deadlineTitle,
           relatedDeadlineId: relatedDeadlineId || '',

@@ -30,21 +30,13 @@ export async function GET(req: NextRequest) {
       return new NextResponse('Internal user record not found.', { status: 404 });
     }
 
-    // 4. Save/update GoogleAccount details in Postgres database
-    await prisma.googleAccount.upsert({
-      where: { userId },
-      update: {
+    // 4. Update User details with googleId and enable sync toggles
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
         googleId: profile.googleId,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken ?? undefined,
-        syncCalendar: true, // auto-enable calendar sync upon connection
-      },
-      create: {
-        userId,
-        googleId: profile.googleId,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken || null,
-        syncCalendar: true,
+        gmailSyncEnabled: true,
+        calendarSyncEnabled: true,
       },
     });
 

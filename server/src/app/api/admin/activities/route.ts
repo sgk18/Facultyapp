@@ -38,12 +38,13 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       },
     }),
     prisma.deadline.count(),
-    prisma.reminder.findMany({
+    prisma.deadline.findMany({
+      where: { reminderEnabled: true },
       skip: rSkip,
       take: rLimit,
       orderBy: { createdAt: 'desc' },
       include: {
-        user: {
+        owner: {
           select: {
             fullName: true,
             email: true,
@@ -51,8 +52,22 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         },
       },
     }),
-    prisma.reminder.count(),
+    prisma.deadline.count({ where: { reminderEnabled: true } }),
   ]);
+
+  const mappedReminders = reminders.map((r) => ({
+    id: r.id,
+    title: r.title,
+    description: r.description,
+    reminderTime: r.reminderTime,
+    repeatType: r.repeatType || 'NONE',
+    status: r.status,
+    createdAt: r.createdAt,
+    user: {
+      fullName: r.owner.fullName,
+      email: r.owner.email,
+    },
+  }));
 
   return sendSuccess(
     {
@@ -66,7 +81,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         },
       },
       reminders: {
-        items: reminders,
+        items: mappedReminders,
         pagination: {
           page: rPage,
           limit: rLimit,

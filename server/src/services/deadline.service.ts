@@ -1,9 +1,8 @@
 import { prisma } from '@/lib/prisma';
 import { AuthenticatedUser } from '@/lib/auth';
-import { NotFoundError, ForbiddenError, ValidationError } from '@/utils/errors';
+import { NotFoundError, ForbiddenError } from '@/utils/errors';
 import { DeadlineInput } from '@/validators/deadline';
 import { NotificationService } from '@/services/notification.service';
-import { GoogleClient } from '@/lib/google';
 
 export class DeadlineService {
   /**
@@ -72,7 +71,31 @@ export class DeadlineService {
       throw new NotFoundError('Target department not found');
     }
 
-    // 1. Create the deadline
+    // Calculate reminderTime if reminderSettings is provided
+    let reminderEnabled = false;
+    let reminderTime: Date | null = null;
+    const settings = input.reminderSettings || [];
+    if (settings.length > 0) {
+      const now = new Date();
+      const dueDate = new Date(input.dueDate);
+      const offsets = [
+        { key: '24_HOURS', offsetMs: 24 * 60 * 60 * 1000 },
+        { key: '6_HOURS', offsetMs: 6 * 60 * 60 * 1000 },
+        { key: '1_HOUR', offsetMs: 1 * 60 * 60 * 1000 },
+      ];
+      for (const offset of offsets) {
+        if (settings.includes(offset.key)) {
+          const computedTime = new Date(dueDate.getTime() - offset.offsetMs);
+          if (computedTime > now) {
+            reminderEnabled = true;
+            reminderTime = computedTime;
+            break;
+          }
+        }
+      }
+    }
+
+    // 1. Create the deadline directly with consolidated reminder/calendar fields
     const deadline = await prisma.deadline.create({
       data: {
         title: input.title,
@@ -83,6 +106,9 @@ export class DeadlineService {
         ownerId: user.id,
         isCompleted: input.isCompleted ?? false,
         status: input.status ?? 'ACTIVE',
+        syncToCalendar: input.addToGoogleCalendar ?? false,
+        reminderEnabled,
+        reminderTime,
       },
       include: {
         owner: true,
@@ -90,68 +116,15 @@ export class DeadlineService {
       },
     });
 
-    // 2. Handle Google Calendar sync if requested
-    if (input.addToGoogleCalendar) {
-      const account = await prisma.googleAccount.findUnique({
-        where: { userId: user.id },
-      });
-      if (!account) {
-        throw new ValidationError('Google account is not connected. Please connect it first.');
-      }
-      if (!account.syncCalendar) {
-        await prisma.googleAccount.update({
-          where: { userId: user.id },
-          data: { syncCalendar: true },
-        });
-      }
-
-      await prisma.calendarEvent.create({
-        data: {
-          userId: user.id,
-          deadlineId: deadline.id,
-          title: `Deadline: ${deadline.title}`,
-          description: deadline.description || 'Academic Deadline',
-          startTime: deadline.dueDate,
-          endTime: new Date(deadline.dueDate.getTime() + 60 * 60 * 1000), // 1 hour duration
-          eventType: 'DEADLINE',
-          source: 'APP',
-        },
-      });
-
+    // 2. Mock Google Calendar sync trigger
+    if (deadline.syncToCalendar) {
       const { SyncService } = require('./sync.service');
       SyncService.syncCalendarForUser(user.id).catch((err: any) => {
         console.error('Failed to sync new deadline to Google Calendar:', err);
       });
     }
 
-    // 3. Generate Reminders based on timing rules
-    const settings = input.reminderSettings || ['24_HOURS', '6_HOURS', '1_HOUR'];
-    const offsets = [
-      { key: '24_HOURS', label: '24 hours before', offsetMs: 24 * 60 * 60 * 1000 },
-      { key: '6_HOURS', label: '6 hours before', offsetMs: 6 * 60 * 60 * 1000 },
-      { key: '1_HOUR', label: '1 hour before', offsetMs: 1 * 60 * 60 * 1000 },
-    ];
-
-    const now = new Date();
-    for (const offset of offsets) {
-      if (settings.includes(offset.key)) {
-        const reminderTime = new Date(deadline.dueDate.getTime() - offset.offsetMs);
-        if (reminderTime > now) {
-          await prisma.reminder.create({
-            data: {
-              userId: user.id,
-              deadlineId: deadline.id,
-              title: `Reminder: ${deadline.title} (${offset.label})`,
-              description: `Deadline "${deadline.title}" is due in ${offset.label}.`,
-              reminderTime,
-              status: 'PENDING',
-            },
-          });
-        }
-      }
-    }
-
-    // 4. Send creation notification
+    // 3. Send creation notification
     const formattedDate = new Date(deadline.dueDate).toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
@@ -222,6 +195,43 @@ export class DeadlineService {
       updateData.isCompleted = input.status === 'COMPLETED';
     }
 
+    // If dueDate or reminderSettings change, recalculate reminderTime
+    if (input.dueDate !== undefined || input.reminderSettings !== undefined) {
+      const settings = input.reminderSettings || [];
+      const dueDate = new Date(input.dueDate || deadline.dueDate);
+      if (settings.length > 0) {
+        const now = new Date();
+        const offsets = [
+          { key: '24_HOURS', offsetMs: 24 * 60 * 60 * 1000 },
+          { key: '6_HOURS', offsetMs: 6 * 60 * 60 * 1000 },
+          { key: '1_HOUR', offsetMs: 1 * 60 * 60 * 1000 },
+        ];
+        let found = false;
+        for (const offset of offsets) {
+          if (settings.includes(offset.key)) {
+            const computedTime = new Date(dueDate.getTime() - offset.offsetMs);
+            if (computedTime > now) {
+              updateData.reminderEnabled = true;
+              updateData.reminderTime = computedTime;
+              found = true;
+              break;
+            }
+          }
+        }
+        if (!found) {
+          updateData.reminderEnabled = false;
+          updateData.reminderTime = null;
+        }
+      } else {
+        updateData.reminderEnabled = false;
+        updateData.reminderTime = null;
+      }
+    }
+
+    if (input.addToGoogleCalendar !== undefined) {
+      updateData.syncToCalendar = input.addToGoogleCalendar;
+    }
+
     const updatedDeadline = await prisma.deadline.update({
       where: { id },
       data: updateData,
@@ -234,100 +244,12 @@ export class DeadlineService {
     const isCancelled = updatedDeadline.status === 'CANCELLED';
     const isCompleted = updatedDeadline.status === 'COMPLETED';
 
-    // Handle Reminders Update/Cancellation
-    if (isCancelled || isCompleted) {
-      // Cancel/Delete all pending reminders
-      await prisma.reminder.deleteMany({
-        where: { deadlineId: id, status: 'PENDING' },
+    // Mock Google Calendar sync trigger
+    if (updatedDeadline.syncToCalendar) {
+      const { SyncService } = require('./sync.service');
+      SyncService.syncCalendarForUser(user.id).catch((err: any) => {
+        console.error('Failed to sync updated deadline to Google Calendar:', err);
       });
-    } else if (input.dueDate !== undefined || input.title !== undefined) {
-      // Regenerate reminders for modified date/title
-      await prisma.reminder.deleteMany({
-        where: { deadlineId: id },
-      });
-
-      const settings = input.reminderSettings || ['24_HOURS', '6_HOURS', '1_HOUR'];
-      const offsets = [
-        { key: '24_HOURS', label: '24 hours before', offsetMs: 24 * 60 * 60 * 1000 },
-        { key: '6_HOURS', label: '6 hours before', offsetMs: 6 * 60 * 60 * 1000 },
-        { key: '1_HOUR', label: '1 hour before', offsetMs: 1 * 60 * 60 * 1000 },
-      ];
-
-      const now = new Date();
-      for (const offset of offsets) {
-        if (settings.includes(offset.key)) {
-          const reminderTime = new Date(updatedDeadline.dueDate.getTime() - offset.offsetMs);
-          if (reminderTime > now) {
-            await prisma.reminder.create({
-              data: {
-                userId: user.id,
-                deadlineId: id,
-                title: `Reminder: ${updatedDeadline.title} (${offset.label})`,
-                description: `Deadline "${updatedDeadline.title}" is due in ${offset.label}.`,
-                reminderTime,
-                status: 'PENDING',
-              },
-            });
-          }
-        }
-      }
-    }
-
-    // Handle Calendar Event Sync/Removal
-    const calendarEvent = await prisma.calendarEvent.findFirst({
-      where: { deadlineId: id },
-    });
-
-    if (calendarEvent) {
-      if (isCancelled) {
-        // Delete calendar event from Google Calendar and locally
-        if (calendarEvent.googleEventId) {
-          try {
-            const { SyncService } = require('./sync.service');
-            const token = await SyncService.getActiveAccessToken(user.id);
-            if (token) {
-              await GoogleClient.deleteCalendarEvent(token, calendarEvent.googleEventId);
-            }
-          } catch (err) {
-            console.error('Failed to delete Google Calendar event:', err);
-          }
-        }
-        await prisma.calendarEvent.delete({ where: { id: calendarEvent.id } }).catch(() => {});
-      } else if (input.dueDate !== undefined || input.title !== undefined || input.description !== undefined) {
-        // Update details of calendar event
-        const updatedEvent = await prisma.calendarEvent.update({
-          where: { id: calendarEvent.id },
-          data: {
-            title: `Deadline: ${updatedDeadline.title}`,
-            description: updatedDeadline.description || 'Academic Deadline',
-            startTime: updatedDeadline.dueDate,
-            endTime: new Date(updatedDeadline.dueDate.getTime() + 60 * 60 * 1000),
-          },
-        });
-
-        // Trigger Google Calendar sync update (deletes old one and creates new one if googleEventId changes)
-        if (updatedEvent.googleEventId) {
-          try {
-            const { SyncService } = require('./sync.service');
-            const token = await SyncService.getActiveAccessToken(user.id);
-            if (token) {
-              await GoogleClient.deleteCalendarEvent(token, updatedEvent.googleEventId);
-              const newGoogleEventId = await GoogleClient.createCalendarEvent(token, {
-                title: updatedEvent.title,
-                startTime: updatedEvent.startTime,
-                endTime: updatedEvent.endTime,
-                description: updatedEvent.description || 'Created via CHRIST Faculty Platform',
-              });
-              await prisma.calendarEvent.update({
-                where: { id: updatedEvent.id },
-                data: { googleEventId: newGoogleEventId },
-              });
-            }
-          } catch (err) {
-            console.error('Failed to sync updated event to Google Calendar:', err);
-          }
-        }
-      }
     }
 
     // Notify of updates/cancellation
@@ -346,7 +268,7 @@ export class DeadlineService {
 
     if (isCancelled) {
       notificationTitle = `Cancelled Academic Deadline: ${updatedDeadline.title}`;
-      notificationBody = `The deadline "${updatedDeadline.title}" has been marked as CANCELLED. All reminders have been cleared.`;
+      notificationBody = `The deadline "${updatedDeadline.title}" has been marked as CANCELLED.`;
     } else if (isCompleted) {
       notificationTitle = `Completed Academic Deadline: ${updatedDeadline.title}`;
       notificationBody = `Great job! The deadline "${updatedDeadline.title}" has been marked as COMPLETED.`;
@@ -380,23 +302,6 @@ export class DeadlineService {
 
     if (deadline.ownerId !== user.id) {
       throw new ForbiddenError('You do not have permission to delete this deadline');
-    }
-
-    // Clean up linked Google Calendar events before deletion
-    const calendarEvent = await prisma.calendarEvent.findFirst({
-      where: { deadlineId: id },
-    });
-
-    if (calendarEvent && calendarEvent.googleEventId) {
-      try {
-        const { SyncService } = require('./sync.service');
-        const token = await SyncService.getActiveAccessToken(user.id);
-        if (token) {
-          await GoogleClient.deleteCalendarEvent(token, calendarEvent.googleEventId);
-        }
-      } catch (err) {
-        console.error('Failed to delete Google Calendar event:', err);
-      }
     }
 
     await prisma.deadline.delete({

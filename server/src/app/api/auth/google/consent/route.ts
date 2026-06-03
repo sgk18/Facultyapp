@@ -9,19 +9,19 @@ import { prisma } from '@/lib/prisma';
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
 
-  const account = await prisma.googleAccount.findUnique({
-    where: { userId: user.id },
+  const userRecord = await prisma.user.findUnique({
+    where: { id: user.id },
   });
 
-  if (!account) {
+  if (!userRecord || !userRecord.googleId) {
     return sendSuccess({ connected: false, syncGmail: false, syncCalendar: false }, 'Google account not connected');
   }
 
   return sendSuccess({
     connected: true,
-    syncGmail: account.syncGmail,
-    syncCalendar: account.syncCalendar,
-    connectedAt: account.connectedAt,
+    syncGmail: userRecord.gmailSyncEnabled,
+    syncCalendar: userRecord.calendarSyncEnabled,
+    connectedAt: userRecord.createdAt,
   }, 'Consent status retrieved');
 });
 
@@ -36,25 +36,25 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     throw new ValidationError('syncGmail and syncCalendar must be boolean fields');
   }
 
-  const account = await prisma.googleAccount.findUnique({
-    where: { userId: user.id },
+  const userRecord = await prisma.user.findUnique({
+    where: { id: user.id },
   });
 
-  if (!account) {
+  if (!userRecord || !userRecord.googleId) {
     throw new ValidationError('Google account is not connected. Connect via OAuth first.');
   }
 
-  const updated = await prisma.googleAccount.update({
-    where: { userId: user.id },
+  const updated = await prisma.user.update({
+    where: { id: user.id },
     data: {
-      syncGmail: body.syncGmail,
-      syncCalendar: body.syncCalendar,
+      gmailSyncEnabled: body.syncGmail,
+      calendarSyncEnabled: body.syncCalendar,
     },
   });
 
   return sendSuccess({
-    syncGmail: updated.syncGmail,
-    syncCalendar: updated.syncCalendar,
+    syncGmail: updated.gmailSyncEnabled,
+    syncCalendar: updated.calendarSyncEnabled,
   }, 'Sync consent options updated successfully');
 });
 
@@ -64,24 +64,29 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 export const DELETE = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
 
-  const account = await prisma.googleAccount.findUnique({
-    where: { userId: user.id },
+  const userRecord = await prisma.user.findUnique({
+    where: { id: user.id },
   });
 
-  if (!account) {
+  if (!userRecord || !userRecord.googleId) {
     throw new ValidationError('No connected Google account found');
   }
 
-  // 1. Delete the google account record (will cascade if configured, but let's delete explicitly)
-  await prisma.googleAccount.delete({
-    where: { userId: user.id },
+  // 1. Clear Google connection columns from the user model
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      googleId: null,
+      gmailSyncEnabled: false,
+      calendarSyncEnabled: false,
+    },
   });
 
-  // 2. Remove any calendar events downloaded from Google to keep internal db clean
-  await prisma.calendarEvent.deleteMany({
+  // 2. Remove any deadlines created from Google Calendar events to keep internal db clean
+  await prisma.deadline.deleteMany({
     where: {
-      userId: user.id,
-      source: 'GOOGLE',
+      ownerId: user.id,
+      googleEventId: { not: null },
     },
   });
 

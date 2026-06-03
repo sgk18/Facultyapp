@@ -135,14 +135,14 @@ class RemindersNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     if (user == null) return;
 
     _channel = Supabase.instance.client
-        .channel('public:reminders')
+        .channel('public:deadlines_reminders')
         .onPostgresChanges(
           event: PostgresChangeEvent.all,
           schema: 'public',
-          table: 'reminders',
+          table: 'deadlines',
           filter: PostgresChangeFilter(
             type: PostgresChangeFilterType.eq,
-            column: 'user_id',
+            column: 'owner_id',
             value: user.id,
           ),
           callback: (payload) {

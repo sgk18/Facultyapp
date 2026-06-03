@@ -19,8 +19,8 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     prisma.user.count({ where: { role: 'HOD' } }),
     prisma.user.count({ where: { isSuspended: false } }),
     prisma.deadline.count({ where: { isCompleted: false } }),
-    prisma.calendarEvent.count({ where: { startTime: { gte: new Date() } } }),
-    prisma.googleAccount.count({ where: { syncGmail: true } }),
+    prisma.deadline.count({ where: { syncToCalendar: true, dueDate: { gte: new Date() } } }),
+    prisma.user.count({ where: { gmailSyncEnabled: true } }),
   ]);
 
   return sendSuccess({
