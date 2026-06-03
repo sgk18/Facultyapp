@@ -390,6 +390,7 @@ class _AddEventOrReminderSheetState extends ConsumerState<AddEventOrReminderShee
   DateTime _endTime = DateTime.now().add(const Duration(hours: 2));
   String _eventType = 'GENERAL'; // 'GENERAL', 'CLASS', 'MEETING', 'EXAM'
   String _repeatType = 'NONE'; // 'NONE', 'DAILY', 'WEEKLY', 'MONTHLY'
+  bool _addToGoogleCalendar = false;
 
   @override
   Widget build(BuildContext context) {
@@ -563,6 +564,19 @@ class _AddEventOrReminderSheetState extends ConsumerState<AddEventOrReminderShee
                     if (val != null) setState(() => _repeatType = val);
                   },
                 ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  title: const Text('Add to Google Calendar', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                  subtitle: const Text('Sync this reminder to your Google Calendar', style: TextStyle(fontSize: 12)),
+                  contentPadding: EdgeInsets.zero,
+                  value: _addToGoogleCalendar,
+                  activeThumbColor: AppTheme.primary,
+                  onChanged: (val) {
+                    setState(() {
+                      _addToGoogleCalendar = val;
+                    });
+                  },
+                ),
               ],
 
               const SizedBox(height: 28),
@@ -639,6 +653,14 @@ class _AddEventOrReminderSheetState extends ConsumerState<AddEventOrReminderShee
             endTime: _endTime,
             eventType: _eventType,
           );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Calendar event created successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         } else {
           // Reminder
           await ref.read(remindersProvider.notifier).createReminder(
@@ -646,7 +668,16 @@ class _AddEventOrReminderSheetState extends ConsumerState<AddEventOrReminderShee
             description: _descController.text.trim(),
             reminderTime: _startTime,
             repeatType: _repeatType,
+            addToGoogleCalendar: _addToGoogleCalendar,
           );
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Reminder created successfully!'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
         }
         if (mounted) {
           Navigator.pop(context);

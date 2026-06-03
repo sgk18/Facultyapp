@@ -437,6 +437,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
     final descController = TextEditingController(text: existing?.description ?? '');
     DateTime selectedDate = existing?.dueDate ?? DateTime.now().add(const Duration(days: 1));
     String priority = existing?.priority ?? 'HIGH';
+    bool addToGoogleCalendar = false;
     
     final authState = ref.read(authNotifierProvider);
     final isFaculty = authState.user?.role == 'FACULTY';
@@ -604,6 +605,23 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                           ),
                         ],
                       ),
+                      
+                      // Google Calendar sync toggle
+                      if (existing == null) ...[
+                        const SizedBox(height: 12),
+                        SwitchListTile(
+                          title: const Text('Add to Google Calendar', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                          subtitle: const Text('Sync this deadline to your Google Calendar', style: TextStyle(fontSize: 12)),
+                          contentPadding: EdgeInsets.zero,
+                          value: addToGoogleCalendar,
+                          activeThumbColor: AppTheme.primary,
+                          onChanged: (val) {
+                            setModalState(() {
+                              addToGoogleCalendar = val;
+                            });
+                          },
+                        ),
+                      ],
                       const SizedBox(height: 24),
                       
                       // Submit Button
@@ -634,7 +652,16 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                     dueDate: selectedDate,
                                     priority: priority,
                                     departmentId: finalDeptId,
+                                    addToGoogleCalendar: addToGoogleCalendar,
                                   );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Deadline created successfully!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
                                 } else {
                                   await ref.read(deadlinesProvider.notifier).updateDeadline(
                                     existing.id,
@@ -646,6 +673,14 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                       'departmentId': finalDeptId,
                                     },
                                   );
+                                  if (context.mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Deadline updated successfully!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  }
                                 }
                                 if (ctx.mounted) {
                                   Navigator.pop(ctx);

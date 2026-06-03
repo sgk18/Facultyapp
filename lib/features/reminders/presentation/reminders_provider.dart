@@ -76,6 +76,7 @@ class RemindersNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     String? description,
     required DateTime reminderTime,
     required String repeatType,
+    bool addToGoogleCalendar = false,
   }) async {
     final response = await _ref.read(apiClientProvider).post(
       '/reminders',
@@ -84,6 +85,7 @@ class RemindersNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
         'description': description,
         'reminderTime': reminderTime.toIso8601String(),
         'repeatType': repeatType,
+        'addToGoogleCalendar': addToGoogleCalendar,
       },
     );
     final newReminder = Reminder.fromJson(response.data['data']);

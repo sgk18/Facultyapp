@@ -69,6 +69,7 @@ class DeadlinesNotifier extends StateNotifier<AsyncValue<List<Deadline>>> {
     required DateTime dueDate,
     required String priority,
     required String departmentId,
+    bool addToGoogleCalendar = false,
   }) async {
     await _ref.read(apiClientProvider).post(
       '/deadlines',
@@ -78,6 +79,7 @@ class DeadlinesNotifier extends StateNotifier<AsyncValue<List<Deadline>>> {
         'dueDate': dueDate.toIso8601String(),
         'priority': priority,
         'departmentId': departmentId,
+        'addToGoogleCalendar': addToGoogleCalendar,
       },
     );
     await fetchDeadlines();

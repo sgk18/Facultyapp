@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { AuthenticatedUser } from '@/lib/auth';
-import { NotFoundError, ForbiddenError } from '@/utils/errors';
+import { NotFoundError, ForbiddenError, ValidationError } from '@/utils/errors';
 import { DeadlineInput } from '@/validators/deadline';
 import { NotificationService } from '@/services/notification.service';
 
@@ -99,6 +99,39 @@ export class DeadlineService {
         department: true,
       },
     });
+
+    // Handle Google Calendar sync if requested
+    if (input.addToGoogleCalendar) {
+      const account = await prisma.googleAccount.findUnique({
+        where: { userId: user.id },
+      });
+      if (!account) {
+        throw new ValidationError('Google account is not connected. Please connect it first.');
+      }
+      if (!account.syncCalendar) {
+        await prisma.googleAccount.update({
+          where: { userId: user.id },
+          data: { syncCalendar: true },
+        });
+      }
+
+      await prisma.calendarEvent.create({
+        data: {
+          userId: user.id,
+          title: `Deadline: ${deadline.title}`,
+          description: deadline.description || 'Academic Deadline',
+          startTime: deadline.dueDate,
+          endTime: new Date(deadline.dueDate.getTime() + 60 * 60 * 1000), // 1 hour duration
+          eventType: 'DEADLINE',
+          source: 'APP',
+        },
+      });
+
+      const { SyncService } = require('./sync.service');
+      SyncService.syncCalendarForUser(user.id).catch((err: any) => {
+        console.error('Failed to sync new deadline to Google Calendar:', err);
+      });
+    }
 
     // 3. Orchestrate notifications asynchronously
     const formattedDate = new Date(deadline.dueDate).toLocaleDateString('en-US', {

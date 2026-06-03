@@ -9,6 +9,7 @@ export const deadlineSchema = z.object({
   priority: z.enum(['HIGH', 'MEDIUM', 'LOW']).default('MEDIUM'),
   departmentId: z.string().uuid('Invalid department ID format'),
   isCompleted: z.boolean().default(false).optional(),
+  addToGoogleCalendar: z.boolean().optional(),
 });
 
 export type DeadlineInput = z.infer<typeof deadlineSchema>;

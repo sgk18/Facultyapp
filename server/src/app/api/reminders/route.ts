@@ -44,6 +44,39 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
+  // Handle Google Calendar sync if requested
+  if (body.addToGoogleCalendar) {
+    const account = await prisma.googleAccount.findUnique({
+      where: { userId: user.id },
+    });
+    if (!account) {
+      throw new ValidationError('Google account is not connected. Please connect it first.');
+    }
+    if (!account.syncCalendar) {
+      await prisma.googleAccount.update({
+        where: { userId: user.id },
+        data: { syncCalendar: true },
+      });
+    }
+
+    await prisma.calendarEvent.create({
+      data: {
+        userId: user.id,
+        title: `Reminder: ${reminder.title}`,
+        description: reminder.description || 'Academic Reminder',
+        startTime: reminder.reminderTime,
+        endTime: new Date(reminder.reminderTime.getTime() + 30 * 60 * 1000), // 30 mins duration
+        eventType: 'REMINDER',
+        source: 'APP',
+      },
+    });
+
+    const { SyncService } = require('@/services/sync.service');
+    SyncService.syncCalendarForUser(user.id).catch((err: any) => {
+      console.error('Failed to sync new reminder to Google Calendar:', err);
+    });
+  }
+
   return sendSuccess(reminder, 'Reminder created successfully');
 });
 

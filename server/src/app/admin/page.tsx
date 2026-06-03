@@ -26,16 +26,20 @@ interface User {
 
 export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
+  const [deadlines, setDeadlines] = useState<any[]>([]);
+  const [reminders, setReminders] = useState<any[]>([]);
   const [token, setToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'DEADLINES' | 'REMINDERS'>('USERS');
 
   const showMsg = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type });
@@ -131,6 +135,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (isAuthenticated && isAdmin && token) {
       fetchUsers();
+      fetchActivities();
     }
   }, [isAuthenticated, isAdmin, token]);
 
@@ -190,6 +195,26 @@ export default function AdminDashboard() {
       showMsg(err.message || 'API fetch error', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchActivities = async () => {
+    setActivityLoading(true);
+    try {
+      const res = await fetch('/api/admin/activities', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await res.json();
+      if (payload.success) {
+        setDeadlines(payload.data.deadlines);
+        setReminders(payload.data.reminders);
+      } else {
+        showMsg(payload.error || 'Failed to fetch user activities', 'error');
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'API fetch error', 'error');
+    } finally {
+      setActivityLoading(false);
     }
   };
 
@@ -896,6 +921,46 @@ export default function AdminDashboard() {
           from { opacity: 0; }
           to { opacity: 1; }
         }
+
+        .tabs-container {
+          display: flex;
+          gap: 16px;
+          margin-bottom: 28px;
+          border-bottom: 1.5px solid #DCDCDC;
+          padding-bottom: 2px;
+        }
+
+        .tab-btn {
+          padding: 12px 24px;
+          border: none;
+          background: transparent;
+          color: #4B5563;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          position: relative;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tab-btn:hover {
+          color: #0147AD;
+        }
+
+        .tab-btn.active {
+          color: #0147AD;
+        }
+
+        .tab-btn.active::after {
+          content: '';
+          position: absolute;
+          bottom: -2.5px;
+          left: 0;
+          width: 100%;
+          height: 3px;
+          background: #0147AD;
+          border-radius: 2px;
+        }
       `}</style>
 
       {/* Header Bar */}
@@ -960,107 +1025,263 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Search & Filter Controls */}
-      <div className="controls-card">
-        <input
-          type="text"
-          className="search-input"
-          placeholder="Search by name or email..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select
-          className="filter-select"
-          value={roleFilter}
-          onChange={(e) => setRoleFilter(e.target.value)}
+      {/* Navigation Tabs */}
+      <div className="tabs-container">
+        <button
+          className={`tab-btn ${activeTab === 'USERS' ? 'active' : ''}`}
+          onClick={() => setActiveTab('USERS')}
         >
-          <option value="ALL">All Roles</option>
-          <option value="ADMIN">ADMIN</option>
-          <option value="HOD">HOD</option>
-          <option value="FACULTY">FACULTY</option>
-        </select>
+          Faculty Accounts
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'DEADLINES' ? 'active' : ''}`}
+          onClick={() => setActiveTab('DEADLINES')}
+        >
+          Created Deadlines
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'REMINDERS' ? 'active' : ''}`}
+          onClick={() => setActiveTab('REMINDERS')}
+        >
+          Created Reminders
+        </button>
       </div>
 
-      {/* Faculty list Table */}
-      <div className="table-container">
-        {loading && users.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
-            Fetching direct database records...
+      {activeTab === 'USERS' && (
+        <>
+          {/* Search & Filter Controls */}
+          <div className="controls-card">
+            <input
+              type="text"
+              className="search-input"
+              placeholder="Search by name or email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <select
+              className="filter-select"
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+            >
+              <option value="ALL">All Roles</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="HOD">HOD</option>
+              <option value="FACULTY">FACULTY</option>
+            </select>
           </div>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Faculty Profile</th>
-                <th>Department</th>
-                <th>Current Role</th>
-                <th>Role Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className="faculty-profile">
-                      {user.avatarUrl ? (
-                        <img src={user.avatarUrl} alt={user.fullName} className="faculty-avatar" />
-                      ) : (
-                        <div className="faculty-avatar">
-                          {user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+
+          {/* Faculty list Table */}
+          <div className="table-container">
+            {loading && users.length === 0 ? (
+              <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+                Fetching direct database records...
+              </div>
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Faculty Profile</th>
+                    <th>Department</th>
+                    <th>Current Role</th>
+                    <th>Role Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((user) => (
+                    <tr key={user.id}>
+                      <td>
+                        <div className="faculty-profile">
+                          {user.avatarUrl ? (
+                            <img src={user.avatarUrl} alt={user.fullName} className="faculty-avatar" />
+                          ) : (
+                            <div className="faculty-avatar">
+                              {user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="faculty-info">
+                            <h4>{user.fullName}</h4>
+                            <p>{user.email}</p>
+                          </div>
                         </div>
-                      )}
-                      <div className="faculty-info">
-                        <h4>{user.fullName}</h4>
-                        <p>{user.email}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <span className="dept-tag">{user.department?.code || 'GEN'}</span>
-                  </td>
-                  <td>
-                    <span className={`role-badge role-${user.role.toLowerCase()}`}>
-                      {user.role}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="action-cell">
-                      {user.role === 'FACULTY' && (
-                        <button
-                          className="btn-action btn-promote"
-                          onClick={() => promoteUser(user.id)}
-                        >
-                          Promote to HOD
-                        </button>
-                      )}
-                      {user.role === 'HOD' && (
-                        <button
-                          className="btn-action btn-demote"
-                          onClick={() => demoteUser(user.id)}
-                        >
-                          Demote to Faculty
-                        </button>
-                      )}
-                      {user.role === 'ADMIN' && (
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
-                          Root Lock
+                      </td>
+                      <td>
+                        <span className="dept-tag">{user.department?.code || 'GEN'}</span>
+                      </td>
+                      <td>
+                        <span className={`role-badge role-${user.role.toLowerCase()}`}>
+                          {user.role}
                         </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {filteredUsers.length === 0 && (
+                      </td>
+                      <td>
+                        <div className="action-cell">
+                          {user.role === 'FACULTY' && (
+                            <button
+                              className="btn-action btn-promote"
+                              onClick={() => promoteUser(user.id)}
+                            >
+                              Promote to HOD
+                            </button>
+                          )}
+                          {user.role === 'HOD' && (
+                            <button
+                              className="btn-action btn-demote"
+                              onClick={() => demoteUser(user.id)}
+                            >
+                              Demote to Faculty
+                            </button>
+                          )}
+                          {user.role === 'ADMIN' && (
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: '600' }}>
+                              Root Lock
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredUsers.length === 0 && (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                        No faculty members matching the query were found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'DEADLINES' && (
+        <div className="table-container">
+          {activityLoading && deadlines.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+              Fetching platform deadline records...
+            </div>
+          ) : (
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan={4} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
-                    No faculty members matching the query were found.
-                  </td>
+                  <th>Creator</th>
+                  <th>Deadline Title</th>
+                  <th>Description</th>
+                  <th>Dept</th>
+                  <th>Priority</th>
+                  <th>Due Date</th>
+                  <th>Status</th>
+                  <th>Created At</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {deadlines.map((d) => (
+                  <tr key={d.id}>
+                    <td>
+                      <div className="faculty-info">
+                        <h4 style={{ margin: 0 }}>{d.createdBy?.fullName || 'System/Email Sync'}</h4>
+                        <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{d.createdBy?.email || 'N/A'}</p>
+                      </div>
+                    </td>
+                    <td style={{ fontWeight: '600', color: '#0147AD' }}>{d.title}</td>
+                    <td style={{ color: '#4B5563', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.description}>{d.description}</td>
+                    <td>
+                      <span className="dept-tag">{d.department?.code || 'GEN'}</span>
+                    </td>
+                    <td>
+                      <span className={`role-badge ${d.priority === 'HIGH' ? 'role-admin' : d.priority === 'MEDIUM' ? 'role-faculty' : 'role-hod'}`}>
+                        {d.priority}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.85rem' }}>
+                      {new Date(d.dueDate).toLocaleString('en-US', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </td>
+                    <td>
+                      <span className={`role-badge ${d.isCompleted ? 'role-hod' : 'role-admin'}`}>
+                        {d.isCompleted ? 'COMPLETED' : 'PENDING'}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                      {new Date(d.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+                {deadlines.length === 0 && (
+                  <tr>
+                    <td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                      No user deadlines found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'REMINDERS' && (
+        <div className="table-container">
+          {activityLoading && reminders.length === 0 ? (
+            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>
+              Fetching platform reminder records...
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Reminder Title</th>
+                  <th>Description</th>
+                  <th>Reminder Time</th>
+                  <th>Repeat Type</th>
+                  <th>Status</th>
+                  <th>Created At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reminders.map((r) => (
+                  <tr key={r.id}>
+                    <td>
+                      <div className="faculty-info">
+                        <h4 style={{ margin: 0 }}>{r.user?.fullName}</h4>
+                        <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{r.user?.email}</p>
+                      </div>
+                    </td>
+                    <td style={{ fontWeight: '600', color: '#0147AD' }}>{r.title}</td>
+                    <td style={{ color: '#4B5563', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.description || ''}>{r.description || 'N/A'}</td>
+                    <td style={{ fontSize: '0.85rem' }}>
+                      {new Date(r.reminderTime).toLocaleString('en-US', {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </td>
+                    <td>
+                      <span className="dept-tag">{r.repeatType}</span>
+                    </td>
+                    <td>
+                      <span className={`role-badge ${r.status === 'COMPLETED' || r.status === 'SENT' ? 'role-hod' : r.status === 'DISMISSED' ? 'role-faculty' : 'role-admin'}`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+                {reminders.length === 0 && (
+                  <tr>
+                    <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                      No user reminders found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
     </div>
   );
 }
