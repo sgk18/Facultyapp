@@ -1,9 +1,10 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError } from '@/utils/errors';
+import { withErrorHandler, sendSuccess, ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors';
 import { requireAuth } from '@/middleware/auth.middleware';
 import { NotificationService } from '@/services/notification.service';
 import { UserService } from '@/services/user.service';
 import { pushTokenSchema } from '@/validators/notification';
+import { prisma } from '@/lib/prisma';
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
@@ -46,4 +47,32 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     result.data.platform
   );
   return sendSuccess(token, 'Push token registered successfully');
+});
+
+export const DELETE = withErrorHandler(async (req: NextRequest) => {
+  const user = await requireAuth(req);
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+  
+  if (!id) {
+    throw new ValidationError('Notification ID is required');
+  }
+  
+  const notification = await prisma.notification.findUnique({
+    where: { id },
+  });
+
+  if (!notification) {
+    throw new NotFoundError('Notification not found');
+  }
+
+  if (notification.userId !== user.id) {
+    throw new ForbiddenError('You do not own this notification');
+  }
+
+  await prisma.notification.delete({
+    where: { id },
+  });
+  
+  return sendSuccess(null, 'Notification deleted successfully');
 });

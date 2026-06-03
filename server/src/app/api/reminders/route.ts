@@ -39,6 +39,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       title: body.title,
       description: body.description || null,
       reminderTime,
+      repeatType: body.repeatType || 'NONE',
       status: 'PENDING',
     },
   });
@@ -80,4 +81,32 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
   });
 
   return sendSuccess(updated, 'Reminder updated successfully');
+});
+
+export const DELETE = withErrorHandler(async (req: NextRequest) => {
+  const user = await requireAuth(req);
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
+
+  if (!id) {
+    throw new ValidationError('id query parameter is required');
+  }
+
+  const reminder = await prisma.reminder.findUnique({
+    where: { id },
+  });
+
+  if (!reminder) {
+    throw new NotFoundError('Reminder not found');
+  }
+
+  if (reminder.userId !== user.id) {
+    throw new ForbiddenError('You do not own this reminder');
+  }
+
+  await prisma.reminder.delete({
+    where: { id },
+  });
+
+  return sendSuccess(null, 'Reminder deleted successfully');
 });

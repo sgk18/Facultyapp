@@ -78,6 +78,14 @@ class ApiClient {
       rethrow;
     }
   }
+
+  Future<Response> patch(String path, {dynamic data}) async {
+    try {
+      return await _dio.patch(path, data: data);
+    } on DioException {
+      rethrow;
+    }
+  }
 }
 
 final apiClientProvider = Provider<ApiClient>((ref) {
