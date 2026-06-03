@@ -1,5 +1,6 @@
 // @ts-check
 import eslint from '@eslint/js';
+import nextPlugin from '@next/eslint-plugin-next';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -10,6 +11,15 @@ export default tseslint.config(
   },
   eslint.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
+  {
+    plugins: {
+      '@next/next': nextPlugin,
+    },
+    rules: {
+      ...nextPlugin.configs.recommended.rules,
+      ...nextPlugin.configs['core-web-vitals'].rules,
+    },
+  },
   eslintPluginPrettierRecommended,
   {
     languageOptions: {
