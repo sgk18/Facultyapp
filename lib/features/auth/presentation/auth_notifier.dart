@@ -83,8 +83,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<bool> _onboardToken(String token) async {
     state = state.copyWith(errorMessage: null);
+    final secureStorage = _ref.read(secureStorageProvider);
     try {
-      final secureStorage = _ref.read(secureStorageProvider);
       await secureStorage.write(key: AppConstants.tokenKey, value: token);
 
       final response = await _ref.read(dioProvider).post(
@@ -107,10 +107,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = state.copyWith(
         errorMessage: message is List ? message.first : message.toString(),
       );
+      await secureStorage.delete(key: AppConstants.tokenKey);
+      await secureStorage.delete(key: AppConstants.userKey);
       await Supabase.instance.client.auth.signOut();
       return false;
     } catch (e) {
       state = state.copyWith(errorMessage: 'An unexpected authentication error occurred.');
+      await secureStorage.delete(key: AppConstants.tokenKey);
+      await secureStorage.delete(key: AppConstants.userKey);
       await Supabase.instance.client.auth.signOut();
       return false;
     }
@@ -121,7 +125,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'facultyapp://login-callback',
+        redirectTo: 'facultyapp://auth/callback',
       );
     } catch (e) {
       state = state.copyWith(errorMessage: 'Google Sign-In failed to initialize.');

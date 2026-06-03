@@ -27,7 +27,18 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
-            <!-- Deep link for Supabase Google OAuth callback: facultyapp://login-callback -->
+            <!-- Deep link for Supabase Google OAuth callback: facultyapp://auth/callback -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="facultyapp"
+                    android:host="auth"
+                    android:pathPrefix="/callback"/>
+            </intent-filter>
+
+            <!-- Keep legacy deep link for backwards compatibility: facultyapp://login-callback -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
