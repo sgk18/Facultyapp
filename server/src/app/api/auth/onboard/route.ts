@@ -57,8 +57,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   }
 
   // 3. New user registration check
-  // Enforce CHRIST University email domain restriction
-  const isApprovedDomain = normalizedEmail.endsWith('@christuniversity.in');
+  // Enforce CHRIST University email domain restriction (allowing subdomains like @bsccmh.christuniversity.in)
+  const isApprovedDomain = normalizedEmail.endsWith('@christuniversity.in') || 
+                           normalizedEmail.endsWith('.christuniversity.in');
   if (!isApprovedDomain) {
     throw new ForbiddenError('Access restricted. Institutional @christuniversity.in email domain required.');
   }
