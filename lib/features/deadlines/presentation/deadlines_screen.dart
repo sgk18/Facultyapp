@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:dio/dio.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../auth/presentation/auth_notifier.dart';
@@ -687,8 +688,28 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                 }
                               } catch (e) {
                                 if (context.mounted) {
+                                  String readableError = e.toString();
+                                  if (e is DioException) {
+                                    final data = e.response?.data;
+                                    if (data is Map<String, dynamic>) {
+                                      final errorMsg = data['error'];
+                                      final details = data['details'];
+                                      if (details is List && details.isNotEmpty) {
+                                        readableError = '$errorMsg: ${details.join(', ')}';
+                                      } else if (errorMsg != null) {
+                                        readableError = errorMsg.toString();
+                                      }
+                                    } else {
+                                      readableError = e.message ?? 'Network connection error';
+                                    }
+                                  }
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(content: Text('Operation failed: $e')),
+                                    SnackBar(
+                                      content: Text('Operation failed: $readableError'),
+                                      backgroundColor: AppTheme.error,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
                                   );
                                 }
                               }

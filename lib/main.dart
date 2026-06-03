@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/router/app_router.dart';
@@ -8,16 +9,48 @@ import 'core/theme/app_theme.dart';
 import 'core/services/local_notification_service.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Supabase.initialize(
-    url: AppConstants.supabaseUrl,
-    anonKey: AppConstants.supabaseAnonKey,
-  );
-  await LocalNotificationService.initialize();
-  runApp(
-    const ProviderScope(
-      child: FacultyApp(),
-    ),
+  await SentryFlutter.init(
+    (options) {
+      options.dsn =
+          'https://ea33fb2e0f879ab2fdd3bf7b673e1e72@o4509442671968256.ingest.de.sentry.io/4509442684813392';
+
+      // Enable automatic performance monitoring
+      options.tracesSampleRate = 1.0;
+
+      // Capture errors thrown in the Flutter framework itself (e.g. build errors)
+      options.enableAutoPerformanceTracing = true;
+
+      // Profile 10% of transactions for performance insights
+      options.profilesSampleRate = 0.1;
+
+      // App name context for breadcrumbs
+      options.attachScreenshot = false;
+    },
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Forward all unhandled Flutter framework errors to Sentry
+      FlutterError.onError = (FlutterErrorDetails details) {
+        Sentry.captureException(
+          details.exception,
+          stackTrace: details.stack,
+        );
+        // Also print to console during development
+        FlutterError.presentError(details);
+      };
+
+      await Supabase.initialize(
+        url: AppConstants.supabaseUrl,
+        anonKey: AppConstants.supabaseAnonKey,
+      );
+      await LocalNotificationService.initialize();
+
+      runApp(
+        const ProviderScope(
+          child: FacultyApp(),
+        ),
+      );
+    },
   );
 }
 

@@ -26,6 +26,7 @@ dependencies:
   flutter_local_notifications: ^17.2.1
   timezone: ^0.9.4
   url_launcher: ^6.2.5
+  sentry_flutter: ^8.9.0
 
 dev_dependencies:
   flutter_test:
@@ -34,3 +35,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/

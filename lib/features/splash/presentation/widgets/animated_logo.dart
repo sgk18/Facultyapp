@@ -70,11 +70,13 @@ class _AnimatedLogoState extends State<AnimatedLogo> with SingleTickerProviderSt
               width: 3.5,
             ),
           ),
-          child: const Center(
-            child: Icon(
-              Icons.school_rounded,
-              size: 52,
-              color: Color(0xFF0147AD),
+          child: ClipOval(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Image.asset(
+                'assets/images/christ_logo.png',
+                fit: BoxFit.contain,
+              ),
             ),
           ),
         ),
