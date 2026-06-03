@@ -4,6 +4,19 @@ import React from 'react';
 import Link from 'next/link';
 
 export default function Home() {
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const search = window.location.search;
+      const hash = window.location.hash;
+      
+      if (search.includes('code=')) {
+        window.location.href = `facultyapp://auth/callback${search}`;
+      } else if (hash.includes('access_token=')) {
+        window.location.href = `facultyapp://auth/callback${hash}`;
+      }
+    }
+  }, []);
+
   return (
     <div className="home-container">
       {/* Dynamic Scoped CSS */}
