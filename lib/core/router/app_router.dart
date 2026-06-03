@@ -12,6 +12,8 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/navigation/presentation/main_scaffold.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
+import '../../features/splash/presentation/splash_controller.dart';
+
 final navigatorKey = GlobalKey<NavigatorState>();
 
 class RouterListenable extends ChangeNotifier {
@@ -20,6 +22,12 @@ class RouterListenable extends ChangeNotifier {
   RouterListenable(this._ref) {
     _ref.listen(
       authNotifierProvider,
+      (previous, next) {
+        notifyListeners();
+      },
+    );
+    _ref.listen(
+      splashFinishedProvider,
       (previous, next) {
         notifyListeners();
       },
@@ -36,6 +44,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: listenable,
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
+      final splashFinished = ref.read(splashFinishedProvider);
       
       final isLoggingIn = state.matchedLocation == '/login';
       final isSplash = state.matchedLocation == '/splash';
@@ -43,12 +52,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthenticated = authState.isAuthenticated;
       final isInitializing = authState.isInitializing;
 
+      // Keep user on splash screen until splash controller completes
+      if (!isSplash && !splashFinished) {
+        return '/splash';
+      }
+
       if (isInitializing) {
         return isSplash ? null : '/splash';
       }
 
       if (!isAuthenticated) {
         return isLoggingIn ? null : '/login';
+      }
+
+      // Check onboarding status (profile setup)
+      // If departmentId is null, we treat it as onboarding incomplete and redirect to /profile
+      final onboardingIncomplete = authState.user?.departmentId == null;
+
+      if (onboardingIncomplete) {
+        return state.matchedLocation == '/profile' ? null : '/profile';
       }
 
       if (isLoggingIn || isSplash) {

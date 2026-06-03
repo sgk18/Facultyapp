@@ -36,6 +36,20 @@ export default function AdminDashboard() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
 
+  // Pagination state
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersTotalPages, setUsersTotalPages] = useState(1);
+  const [usersTotal, setUsersTotal] = useState(0);
+  const [usersStats, setUsersStats] = useState({ totalFaculty: 0, totalHods: 0 });
+
+  const [deadlinesPage, setDeadlinesPage] = useState(1);
+  const [deadlinesTotalPages, setDeadlinesTotalPages] = useState(1);
+  const [deadlinesTotal, setDeadlinesTotal] = useState(0);
+
+  const [remindersPage, setRemindersPage] = useState(1);
+  const [remindersTotalPages, setRemindersTotalPages] = useState(1);
+  const [remindersTotal, setRemindersTotal] = useState(0);
+
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
@@ -134,8 +148,8 @@ export default function AdminDashboard() {
   // Fetch users when token/authentication changes
   useEffect(() => {
     if (isAuthenticated && isAdmin && token) {
-      fetchUsers();
-      fetchActivities();
+      fetchUsers(1);
+      fetchActivities(1, 1);
     }
   }, [isAuthenticated, isAdmin, token]);
 
@@ -174,15 +188,22 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (page = 1) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/admin/users', {
+      const res = await fetch(`/api/admin/users?page=${page}&limit=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
       if (payload.success) {
-        setUsers(payload.data);
+        setUsers(payload.data.items || []);
+        setUsersPage(payload.data.pagination.page);
+        setUsersTotalPages(payload.data.pagination.pages);
+        setUsersTotal(payload.data.pagination.total);
+        setUsersStats({
+          totalFaculty: payload.data.pagination.totalFaculty || 0,
+          totalHods: payload.data.pagination.totalHods || 0,
+        });
       } else {
         if (res.status === 401) {
           await handleLogout();
@@ -198,16 +219,23 @@ export default function AdminDashboard() {
     }
   };
 
-  const fetchActivities = async () => {
+  const fetchActivities = async (dPage = 1, rPage = 1) => {
     setActivityLoading(true);
     try {
-      const res = await fetch('/api/admin/activities', {
+      const res = await fetch(`/api/admin/activities?dPage=${dPage}&dLimit=10&rPage=${rPage}&rLimit=10`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const payload = await res.json();
       if (payload.success) {
-        setDeadlines(payload.data.deadlines);
-        setReminders(payload.data.reminders);
+        setDeadlines(payload.data.deadlines.items || []);
+        setDeadlinesPage(payload.data.deadlines.pagination.page);
+        setDeadlinesTotalPages(payload.data.deadlines.pagination.pages);
+        setDeadlinesTotal(payload.data.deadlines.pagination.total);
+
+        setReminders(payload.data.reminders.items || []);
+        setRemindersPage(payload.data.reminders.pagination.page);
+        setRemindersTotalPages(payload.data.reminders.pagination.pages);
+        setRemindersTotal(payload.data.reminders.pagination.total);
       } else {
         showMsg(payload.error || 'Failed to fetch user activities', 'error');
       }
@@ -215,6 +243,24 @@ export default function AdminDashboard() {
       showMsg(err.message || 'API fetch error', 'error');
     } finally {
       setActivityLoading(false);
+    }
+  };
+
+  const handleUsersPageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= usersTotalPages) {
+      fetchUsers(newPage);
+    }
+  };
+
+  const handleDeadlinesPageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= deadlinesTotalPages) {
+      fetchActivities(newPage, remindersPage);
+    }
+  };
+
+  const handleRemindersPageChange = (newPage: number) => {
+    if (newPage >= 1 && newPage <= remindersTotalPages) {
+      fetchActivities(deadlinesPage, newPage);
     }
   };
 
@@ -233,7 +279,7 @@ export default function AdminDashboard() {
         const payload = await res.json();
         if (payload.success) {
           showMsg(payload.message || 'Promotion successful', 'success');
-          fetchUsers();
+          fetchUsers(usersPage);
         } else {
           showMsg(payload.error || 'Failed to promote', 'error');
         }
@@ -260,7 +306,7 @@ export default function AdminDashboard() {
         const payload = await res.json();
         if (payload.success) {
           showMsg(payload.message || 'Demotion successful', 'success');
-          fetchUsers();
+          fetchUsers(usersPage);
         } else {
           showMsg(payload.error || 'Failed to demote', 'error');
         }
@@ -282,9 +328,9 @@ export default function AdminDashboard() {
   });
 
   // Calculate statistics
-  const totalUsers = users.length;
-  const hodCount = users.filter((u) => u.role === 'HOD').length;
-  const facultyCount = users.filter((u) => u.role === 'FACULTY').length;
+  const totalUsers = usersTotal;
+  const hodCount = usersStats.totalHods;
+  const facultyCount = usersStats.totalFaculty;
 
   if (authChecking) {
     return (
@@ -961,6 +1007,66 @@ export default function AdminDashboard() {
           background: #0147AD;
           border-radius: 2px;
         }
+
+        .pagination-container {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 24px;
+          border-top: 1.5px solid #DCDCDC;
+          background: #f8fafc;
+        }
+
+        .pagination-info {
+          font-size: 0.85rem;
+          color: #6B7280;
+          font-weight: 500;
+        }
+
+        .pagination-controls {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-pagination {
+          padding: 8px 16px;
+          border-radius: 8px;
+          font-size: 0.85rem;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 600;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          border: 1px solid #DCDCDC;
+          background-color: white;
+          color: #4B5563;
+        }
+
+        .btn-pagination:hover:not(:disabled) {
+          border-color: #0147AD;
+          color: #0147AD;
+          background-color: rgba(1, 71, 173, 0.04);
+          transform: translateY(-1px);
+        }
+
+        .btn-pagination:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .btn-pagination:disabled {
+          background-color: #f3f4f6;
+          color: #9CA3AF;
+          cursor: not-allowed;
+          border-color: #e5e7eb;
+        }
+
+        .page-indicator {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: #111827;
+          min-width: 32px;
+          text-align: center;
+        }
       `}</style>
 
       {/* Header Bar */}
@@ -1149,6 +1255,30 @@ export default function AdminDashboard() {
                 </tbody>
               </table>
             )}
+            {!loading && users.length > 0 && (
+              <div className="pagination-container">
+                <div className="pagination-info">
+                  Showing page {usersPage} of {usersTotalPages} ({usersTotal} total accounts)
+                </div>
+                <div className="pagination-controls">
+                  <button
+                    className="btn-pagination"
+                    disabled={usersPage <= 1}
+                    onClick={() => handleUsersPageChange(usersPage - 1)}
+                  >
+                    Previous
+                  </button>
+                  <span className="page-indicator">{usersPage}</span>
+                  <button
+                    className="btn-pagination"
+                    disabled={usersPage >= usersTotalPages}
+                    onClick={() => handleUsersPageChange(usersPage + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -1160,63 +1290,89 @@ export default function AdminDashboard() {
               Fetching platform deadline records...
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Creator</th>
-                  <th>Deadline Title</th>
-                  <th>Description</th>
-                  <th>Dept</th>
-                  <th>Priority</th>
-                  <th>Due Date</th>
-                  <th>Status</th>
-                  <th>Created At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {deadlines.map((d) => (
-                  <tr key={d.id}>
-                    <td>
-                      <div className="faculty-info">
-                        <h4 style={{ margin: 0 }}>{d.createdBy?.fullName || 'System/Email Sync'}</h4>
-                        <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{d.createdBy?.email || 'N/A'}</p>
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: '600', color: '#0147AD' }}>{d.title}</td>
-                    <td style={{ color: '#4B5563', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.description}>{d.description}</td>
-                    <td>
-                      <span className="dept-tag">{d.department?.code || 'GEN'}</span>
-                    </td>
-                    <td>
-                      <span className={`role-badge ${d.priority === 'HIGH' ? 'role-admin' : d.priority === 'MEDIUM' ? 'role-faculty' : 'role-hod'}`}>
-                        {d.priority}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.85rem' }}>
-                      {new Date(d.dueDate).toLocaleString('en-US', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </td>
-                    <td>
-                      <span className={`role-badge ${d.isCompleted ? 'role-hod' : 'role-admin'}`}>
-                        {d.isCompleted ? 'COMPLETED' : 'PENDING'}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.8rem', color: '#6B7280' }}>
-                      {new Date(d.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-                {deadlines.length === 0 && (
+            <>
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
-                      No user deadlines found.
-                    </td>
+                    <th>Creator</th>
+                    <th>Deadline Title</th>
+                    <th>Description</th>
+                    <th>Dept</th>
+                    <th>Priority</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Created At</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {deadlines.map((d) => (
+                    <tr key={d.id}>
+                      <td>
+                        <div className="faculty-info">
+                          <h4 style={{ margin: 0 }}>{d.createdBy?.fullName || 'System/Email Sync'}</h4>
+                          <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{d.createdBy?.email || 'N/A'}</p>
+                        </div>
+                      </td>
+                      <td style={{ fontWeight: '600', color: '#0147AD' }}>{d.title}</td>
+                      <td style={{ color: '#4B5563', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.description}>{d.description}</td>
+                      <td>
+                        <span className="dept-tag">{d.department?.code || 'GEN'}</span>
+                      </td>
+                      <td>
+                        <span className={`role-badge ${d.priority === 'HIGH' ? 'role-admin' : d.priority === 'MEDIUM' ? 'role-faculty' : 'role-hod'}`}>
+                          {d.priority}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.85rem' }}>
+                        {new Date(d.dueDate).toLocaleString('en-US', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </td>
+                      <td>
+                        <span className={`role-badge ${d.isCompleted ? 'role-hod' : 'role-admin'}`}>
+                          {d.isCompleted ? 'COMPLETED' : 'PENDING'}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                        {new Date(d.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {deadlines.length === 0 && (
+                    <tr>
+                      <td colSpan={8} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                        No user deadlines found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {!activityLoading && deadlines.length > 0 && (
+                <div className="pagination-container">
+                  <div className="pagination-info">
+                    Showing page {deadlinesPage} of {deadlinesTotalPages} ({deadlinesTotal} total deadlines)
+                  </div>
+                  <div className="pagination-controls">
+                    <button
+                      className="btn-pagination"
+                      disabled={deadlinesPage <= 1}
+                      onClick={() => handleDeadlinesPageChange(deadlinesPage - 1)}
+                    >
+                      Previous
+                    </button>
+                    <span className="page-indicator">{deadlinesPage}</span>
+                    <button
+                      className="btn-pagination"
+                      disabled={deadlinesPage >= deadlinesTotalPages}
+                      onClick={() => handleDeadlinesPageChange(deadlinesPage + 1)}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -1228,57 +1384,83 @@ export default function AdminDashboard() {
               Fetching platform reminder records...
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Reminder Title</th>
-                  <th>Description</th>
-                  <th>Reminder Time</th>
-                  <th>Repeat Type</th>
-                  <th>Status</th>
-                  <th>Created At</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reminders.map((r) => (
-                  <tr key={r.id}>
-                    <td>
-                      <div className="faculty-info">
-                        <h4 style={{ margin: 0 }}>{r.user?.fullName}</h4>
-                        <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{r.user?.email}</p>
-                      </div>
-                    </td>
-                    <td style={{ fontWeight: '600', color: '#0147AD' }}>{r.title}</td>
-                    <td style={{ color: '#4B5563', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.description || ''}>{r.description || 'N/A'}</td>
-                    <td style={{ fontSize: '0.85rem' }}>
-                      {new Date(r.reminderTime).toLocaleString('en-US', {
-                        dateStyle: 'medium',
-                        timeStyle: 'short',
-                      })}
-                    </td>
-                    <td>
-                      <span className="dept-tag">{r.repeatType}</span>
-                    </td>
-                    <td>
-                      <span className={`role-badge ${r.status === 'COMPLETED' || r.status === 'SENT' ? 'role-hod' : r.status === 'DISMISSED' ? 'role-faculty' : 'role-admin'}`}>
-                        {r.status}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '0.8rem', color: '#6B7280' }}>
-                      {new Date(r.createdAt).toLocaleDateString()}
-                    </td>
-                  </tr>
-                ))}
-                {reminders.length === 0 && (
+            <>
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
-                      No user reminders found.
-                    </td>
+                    <th>User</th>
+                    <th>Reminder Title</th>
+                    <th>Description</th>
+                    <th>Reminder Time</th>
+                    <th>Repeat Type</th>
+                    <th>Status</th>
+                    <th>Created At</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {reminders.map((r) => (
+                    <tr key={r.id}>
+                      <td>
+                        <div className="faculty-info">
+                          <h4 style={{ margin: 0 }}>{r.user?.fullName}</h4>
+                          <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{r.user?.email}</p>
+                        </div>
+                      </td>
+                      <td style={{ fontWeight: '600', color: '#0147AD' }}>{r.title}</td>
+                      <td style={{ color: '#4B5563', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.description || ''}>{r.description || 'N/A'}</td>
+                      <td style={{ fontSize: '0.85rem' }}>
+                        {new Date(r.reminderTime).toLocaleString('en-US', {
+                          dateStyle: 'medium',
+                          timeStyle: 'short',
+                        })}
+                      </td>
+                      <td>
+                        <span className="dept-tag">{r.repeatType}</span>
+                      </td>
+                      <td>
+                        <span className={`role-badge ${r.status === 'COMPLETED' || r.status === 'SENT' ? 'role-hod' : r.status === 'DISMISSED' ? 'role-faculty' : 'role-admin'}`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                        {new Date(r.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {reminders.length === 0 && (
+                    <tr>
+                      <td colSpan={7} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                        No user reminders found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {!activityLoading && reminders.length > 0 && (
+                <div className="pagination-container">
+                  <div className="pagination-info">
+                    Showing page {remindersPage} of {remindersTotalPages} ({remindersTotal} total reminders)
+                  </div>
+                  <div className="pagination-controls">
+                    <button
+                      className="btn-pagination"
+                      disabled={remindersPage <= 1}
+                      onClick={() => handleRemindersPageChange(remindersPage - 1)}
+                    >
+                      Previous
+                    </button>
+                    <span className="page-indicator">{remindersPage}</span>
+                    <button
+                      className="btn-pagination"
+                      disabled={remindersPage >= remindersTotalPages}
+                      onClick={() => handleRemindersPageChange(remindersPage + 1)}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

@@ -215,4 +215,26 @@ export class GoogleClient {
     const data = await res.json();
     return data.id;
   }
+
+  /**
+   * Deletes a calendar event from Google Calendar.
+   */
+  static async deleteCalendarEvent(
+    accessToken: string,
+    googleEventId: string
+  ): Promise<boolean> {
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId}`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!res.ok) {
+      console.error('Failed to delete event from Google Calendar:', await res.text());
+      return false;
+    }
+
+    return true;
+  }
 }

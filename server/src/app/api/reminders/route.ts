@@ -2,12 +2,41 @@ import { NextRequest } from 'next/server';
 import { withErrorHandler, sendSuccess, ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors';
 import { requireAuth } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
+import { GoogleClient } from '@/lib/google';
 
 /**
  * GET retrieve user's reminders
  */
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
+  const { searchParams } = new URL(req.url);
+  const pageStr = searchParams.get('page');
+
+  if (pageStr) {
+    const page = parseInt(pageStr, 10) || 1;
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const skip = (page - 1) * limit;
+
+    const [reminders, total] = await Promise.all([
+      prisma.reminder.findMany({
+        where: { userId: user.id },
+        skip,
+        take: limit,
+        orderBy: { reminderTime: 'asc' },
+      }),
+      prisma.reminder.count({ where: { userId: user.id } }),
+    ]);
+
+    return sendSuccess({
+      items: reminders,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+      }
+    }, 'Reminders retrieved successfully');
+  }
 
   const reminders = await prisma.reminder.findMany({
     where: { userId: user.id },
@@ -91,7 +120,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     throw new ValidationError('id and status are required fields');
   }
 
-  const allowedStatuses = ['PENDING', 'SENT', 'DISMISSED'];
+  const allowedStatuses = ['PENDING', 'SENT', 'DISMISSED', 'COMPLETED', 'CANCELLED'];
   if (!allowedStatuses.includes(body.status)) {
     throw new ValidationError(`status must be one of: ${allowedStatuses.join(', ')}`);
   }
@@ -106,6 +135,38 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
 
   if (reminder.userId !== user.id) {
     throw new ForbiddenError('You do not own this reminder');
+  }
+
+  // If status is updated to CANCELLED, remove linked Google Calendar event
+  if (body.status === 'CANCELLED') {
+    const calendarEvent = await prisma.calendarEvent.findFirst({
+      where: {
+        userId: user.id,
+        eventType: 'REMINDER',
+        title: `Reminder: ${reminder.title}`,
+        startTime: reminder.reminderTime,
+      },
+    });
+
+    if (calendarEvent) {
+      if (calendarEvent.googleEventId) {
+        try {
+          const { SyncService } = require('@/services/sync.service');
+          const token = await SyncService.getActiveAccessToken(user.id);
+          if (token) {
+            await GoogleClient.deleteCalendarEvent(token, calendarEvent.googleEventId);
+          }
+        } catch (err) {
+          console.error('Failed to delete Google Calendar event:', err);
+        }
+      }
+
+      await prisma.calendarEvent.delete({
+        where: { id: calendarEvent.id },
+      }).catch((err) => {
+        console.error('Failed to delete local CalendarEvent record:', err);
+      });
+    }
   }
 
   const updated = await prisma.reminder.update({
@@ -135,6 +196,36 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
 
   if (reminder.userId !== user.id) {
     throw new ForbiddenError('You do not own this reminder');
+  }
+
+  // Find linked calendar event if any
+  const calendarEvent = await prisma.calendarEvent.findFirst({
+    where: {
+      userId: user.id,
+      eventType: 'REMINDER',
+      title: `Reminder: ${reminder.title}`,
+      startTime: reminder.reminderTime,
+    },
+  });
+
+  if (calendarEvent) {
+    if (calendarEvent.googleEventId) {
+      try {
+        const { SyncService } = require('@/services/sync.service');
+        const token = await SyncService.getActiveAccessToken(user.id);
+        if (token) {
+          await GoogleClient.deleteCalendarEvent(token, calendarEvent.googleEventId);
+        }
+      } catch (err) {
+        console.error('Failed to delete Google Calendar event:', err);
+      }
+    }
+
+    await prisma.calendarEvent.delete({
+      where: { id: calendarEvent.id },
+    }).catch((err) => {
+      console.error('Failed to delete local CalendarEvent record:', err);
+    });
   }
 
   await prisma.reminder.delete({
