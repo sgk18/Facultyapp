@@ -27,6 +27,21 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     throw new ValidationError('Authentication provider did not supply a valid email address');
   }
 
+  // Helper to extract trailing numbers as employeeCode
+  const extractEmployeeCode = (fullNameStr: string) => {
+    const match = fullNameStr.match(/(.*?)\s+(\d+)$/);
+    if (match) {
+      return {
+        fullName: match[1].trim(),
+        employeeCode: match[2].trim(),
+      };
+    }
+    return {
+      fullName: fullNameStr.trim(),
+      employeeCode: null,
+    };
+  };
+
   // 2. Query internal database to see if profile already exists
   let dbUser = await prisma.user.findFirst({
     where: {
@@ -39,11 +54,24 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   });
 
   if (dbUser) {
+    const updateData: any = {};
+    
     // Sync supabaseUserId if not already mapped
     if (dbUser.supabaseUserId !== supabaseUser.id) {
+      updateData.supabaseUserId = supabaseUser.id;
+    }
+
+    // Check if the name in the database contains a trailing number and clean it up
+    const { fullName: cleanName, employeeCode: extractedCode } = extractEmployeeCode(dbUser.fullName);
+    if (extractedCode && (dbUser.fullName !== cleanName || dbUser.employeeCode !== extractedCode)) {
+      updateData.fullName = cleanName;
+      updateData.employeeCode = extractedCode;
+    }
+
+    if (Object.keys(updateData).length > 0) {
       dbUser = await prisma.user.update({
         where: { id: dbUser.id },
-        data: { supabaseUserId: supabaseUser.id },
+        data: updateData,
         include: { department: true },
       });
     }
@@ -82,7 +110,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-  const fullName = supabaseUser.user_metadata?.full_name || fallbackName || 'New Faculty Member';
+  const rawFullName = supabaseUser.user_metadata?.full_name || fallbackName || 'New Faculty Member';
+  const { fullName, employeeCode } = extractEmployeeCode(rawFullName);
   const avatarUrl = supabaseUser.user_metadata?.avatar_url || null;
 
   // Default role is FACULTY (Admin promotion must be manual)
@@ -94,6 +123,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
       supabaseUserId: supabaseUser.id,
       email: normalizedEmail,
       fullName,
+      employeeCode,
       avatarUrl,
       role,
       departmentId: department.id,
