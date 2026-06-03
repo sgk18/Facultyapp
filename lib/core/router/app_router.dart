@@ -4,6 +4,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '../../features/auth/presentation/auth_notifier.dart';
 import '../../features/auth/presentation/login_screen.dart';
+import '../../features/auth/presentation/auth_callback_screen.dart';
 import '../../features/dashboard/presentation/dashboard_screen.dart';
 import '../../features/deadlines/presentation/deadlines_screen.dart';
 import '../../features/notifications/presentation/notifications_screen.dart';
@@ -42,12 +43,39 @@ final routerProvider = Provider<GoRouter>((ref) {
     navigatorKey: navigatorKey,
     initialLocation: '/splash',
     refreshListenable: listenable,
+    errorBuilder: (context, state) {
+      final uri = state.uri;
+      if ((uri.scheme == 'facultyapp' && uri.host == 'auth' && uri.path == '/callback') ||
+          (uri.scheme == 'facultyapp' && uri.host == 'login-callback')) {
+        final newPath = Uri(
+          path: '/auth/callback',
+          queryParameters: uri.queryParameters.isEmpty ? null : uri.queryParameters,
+          fragment: uri.fragment.isEmpty ? null : uri.fragment,
+        ).toString();
+        
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          context.go(newPath);
+        });
+        return const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+      }
+      
+      return Scaffold(
+        body: Center(
+          child: Text('Page not found: ${state.error}'),
+        ),
+      );
+    },
     redirect: (context, state) {
       final authState = ref.read(authNotifierProvider);
       final splashFinished = ref.read(splashFinishedProvider);
       
       final isLoggingIn = state.matchedLocation == '/login';
       final isSplash = state.matchedLocation == '/splash';
+      final isAuthCallback = state.matchedLocation == '/auth/callback';
       
       final isAuthenticated = authState.isAuthenticated;
       final isInitializing = authState.isInitializing;
@@ -62,7 +90,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       if (!isAuthenticated) {
-        return isLoggingIn ? null : '/login';
+        return (isLoggingIn || isAuthCallback) ? null : '/login';
       }
 
       // Check onboarding status (profile setup)
@@ -73,7 +101,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         return state.matchedLocation == '/profile' ? null : '/profile';
       }
 
-      if (isLoggingIn || isSplash) {
+      if (isLoggingIn || isSplash || isAuthCallback) {
         return '/dashboard';
       }
 
@@ -87,6 +115,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/login',
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: '/auth/callback',
+        builder: (context, state) {
+          final code = state.uri.queryParameters['code'];
+          return AuthCallbackScreen(code: code);
+        },
       ),
       ShellRoute(
         builder: (context, state, child) {
