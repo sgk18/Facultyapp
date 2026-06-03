@@ -28,7 +28,7 @@
             </intent-filter>
 
             <!-- Deep link for Supabase Google OAuth callback: facultyapp://auth/callback -->
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
@@ -39,7 +39,7 @@
             </intent-filter>
 
             <!-- Keep legacy deep link for backwards compatibility: facultyapp://login-callback -->
-            <intent-filter android:autoVerify="true">
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
