@@ -11,6 +11,28 @@ export interface AuthenticatedUser {
   departmentId: string;
 }
 
+// Memory cache for authenticated tokens to prevent redundant database and Supabase Auth calls
+interface CacheEntry {
+  user: AuthenticatedUser | null;
+  expiresAt: number;
+}
+
+const tokenCache = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // Cache positive verification for 5 minutes
+const NEGATIVE_CACHE_TTL_MS = 10 * 1000; // Cache failed verification for 10 seconds
+
+function cleanExpiredCache() {
+  const now = Date.now();
+  // Bound cache size and clean expired entries lazily
+  if (tokenCache.size > 500) {
+    for (const [token, entry] of tokenCache.entries()) {
+      if (now > entry.expiresAt) {
+        tokenCache.delete(token);
+      }
+    }
+  }
+}
+
 /**
  * Verifies the authentication state of an incoming request.
  * Resolves to the authenticated user's database profile, or null if invalid.
@@ -27,6 +49,15 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
     return null;
   }
 
+  // Check cache first
+  const now = Date.now();
+  const cached = tokenCache.get(token);
+  if (cached && now < cached.expiresAt) {
+    return cached.user;
+  }
+
+  cleanExpiredCache();
+
   try {
     const { data, error } = await supabase.auth.getUser(token);
     if (!error && data.user) {
@@ -35,15 +66,20 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
       });
 
       if (dbUser) {
-        return {
+        const user: AuthenticatedUser = {
           id: dbUser.id,
           email: dbUser.email,
           fullName: dbUser.fullName,
           role: dbUser.role,
           departmentId: dbUser.departmentId,
         };
+        // Cache successful authentication
+        tokenCache.set(token, { user, expiresAt: now + CACHE_TTL_MS });
+        return user;
       }
     }
+    // Cache failure briefly to mitigate spam
+    tokenCache.set(token, { user: null, expiresAt: now + NEGATIVE_CACHE_TTL_MS });
   } catch (error) {
     console.error('Supabase authentication verification failed:', error);
   }

@@ -42,18 +42,43 @@ export default function AdminDashboard() {
     setTimeout(() => setMessage({ text: '', type: '' }), 5000);
   };
 
+  const [authChecking, setAuthChecking] = useState(true);
+
   // Check session on mount and subscribe to auth changes
   useEffect(() => {
     const verifyAndSetSession = async (session: any) => {
       if (session) {
         const accessToken = session.access_token;
         setToken(accessToken);
+
+        // Check sessionStorage cache first to prevent redundant /api/auth/me requests
+        try {
+          const cached = sessionStorage.getItem('admin_session_cache');
+          if (cached) {
+            const { token: cachedToken, isAdmin: cachedIsAdmin } = JSON.parse(cached);
+            if (cachedToken === accessToken) {
+              setIsAuthenticated(true);
+              setIsAdmin(cachedIsAdmin);
+              return;
+            }
+          }
+        } catch (_) {}
+
         try {
           const res = await fetch('/api/auth/me', {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           const payload = await res.json();
-          if (payload.success && payload.data.role === 'ADMIN') {
+          const isUserAdmin = payload.success && payload.data.role === 'ADMIN';
+
+          try {
+            sessionStorage.setItem('admin_session_cache', JSON.stringify({
+              token: accessToken,
+              isAdmin: isUserAdmin
+            }));
+          } catch (_) {}
+
+          if (isUserAdmin) {
             setIsAuthenticated(true);
             setIsAdmin(true);
           } else {
@@ -66,6 +91,7 @@ export default function AdminDashboard() {
           setIsAdmin(false);
         }
       } else {
+        sessionStorage.removeItem('admin_session_cache');
         setIsAuthenticated(false);
         setIsAdmin(false);
         setToken('');
@@ -73,14 +99,14 @@ export default function AdminDashboard() {
     };
 
     const initAuth = async () => {
-      setLoading(true);
+      setAuthChecking(true);
       try {
         const { data: { session } } = await supabase.auth.getSession();
         await verifyAndSetSession(session);
       } catch (err: any) {
         console.error('Failed to get session:', err);
       } finally {
-        setLoading(false);
+        setAuthChecking(false);
       }
     };
 
@@ -88,9 +114,11 @@ export default function AdminDashboard() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        setLoading(true);
+        if (event === 'SIGNED_IN') {
+          setAuthChecking(true);
+        }
         await verifyAndSetSession(session);
-        setLoading(false);
+        setAuthChecking(false);
       }
     );
 
@@ -233,7 +261,7 @@ export default function AdminDashboard() {
   const hodCount = users.filter((u) => u.role === 'HOD').length;
   const facultyCount = users.filter((u) => u.role === 'FACULTY').length;
 
-  if (loading && !token) {
+  if (authChecking) {
     return (
       <div className="login-container">
         <style jsx global>{`
