@@ -1,6 +1,6 @@
 class AppConstants {
   // API URL - change to your deployment or local IP when testing on physical devices
-  static const String baseUrl = 'https://facultyappserver.vercel.app/api';
+  static const String baseUrl = 'http://localhost:3000/api'; // Use http://localhost:3000/api for Windows/Web targets
 
   // Secure Storage Keys
   static const String tokenKey = 'jwt_token';

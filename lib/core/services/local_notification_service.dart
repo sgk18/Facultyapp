@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -6,6 +7,7 @@ class LocalNotificationService {
   static final _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
+    if (kIsWeb) return;
     tz.initializeTimeZones();
     // Default to Asia/Kolkata timezone (Christ University is based in Bangalore, India)
     try {
@@ -44,6 +46,7 @@ class LocalNotificationService {
     required String body,
     required DateTime scheduledDate,
   }) async {
+    if (kIsWeb) return;
     if (scheduledDate.isBefore(DateTime.now())) return;
 
     await _notificationsPlugin.zonedSchedule(
@@ -68,10 +71,12 @@ class LocalNotificationService {
   }
 
   static Future<void> cancelNotification(int id) async {
+    if (kIsWeb) return;
     await _notificationsPlugin.cancel(id);
   }
 
   static Future<void> cancelAll() async {
+    if (kIsWeb) return;
     await _notificationsPlugin.cancelAll();
   }
 }

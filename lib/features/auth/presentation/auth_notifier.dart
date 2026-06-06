@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -146,7 +147,7 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
     try {
       await Supabase.instance.client.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: 'facultyapp://auth/callback',
+        redirectTo: kIsWeb ? 'http://localhost:8080' : 'facultyapp://auth/callback',
       );
     } catch (e) {
       state = state.copyWith(errorMessage: 'Google Sign-In failed to initialize.');
