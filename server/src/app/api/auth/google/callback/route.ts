@@ -37,6 +37,8 @@ export async function GET(req: NextRequest) {
         googleId: profile.googleId,
         gmailSyncEnabled: true,
         calendarSyncEnabled: true,
+        googleAccessToken: tokens.accessToken,
+        googleRefreshToken: tokens.refreshToken || null,
       },
     });
 

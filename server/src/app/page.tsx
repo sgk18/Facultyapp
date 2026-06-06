@@ -25,9 +25,11 @@ export default function Home() {
 
         body {
           margin: 0;
-          background-color: #DCDCDC;
+          background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent),
+                      radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.05), transparent),
+                      #0B0F19;
           font-family: 'Inter', sans-serif;
-          color: #111827;
+          color: #F3F4F6;
           overflow-x: hidden;
         }
 
@@ -39,19 +41,20 @@ export default function Home() {
           justify-content: center;
           padding: 40px 20px;
           position: relative;
-          background-color: #DCDCDC;
         }
 
         .card {
-          background: #FFFFFF;
-          border: 1px solid rgba(0, 0, 0, 0.08);
-          border-radius: 16px;
+          background: rgba(17, 24, 39, 0.7);
+          backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 24px;
           padding: 48px;
           max-width: 650px;
           width: 100%;
           text-align: center;
-          box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-          animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3),
+                      0 0 40px rgba(99, 102, 241, 0.05);
+          animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .logo-area {
@@ -63,18 +66,18 @@ export default function Home() {
         }
 
         .logo-symbol {
-          width: 42px;
-          height: 42px;
-          border-radius: 10px;
-          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 50%, #4A84F0 100%);
+          width: 44px;
+          height: 44px;
+          border-radius: 12px;
+          background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Outfit', sans-serif;
           font-weight: 700;
-          font-size: 1.4rem;
+          font-size: 1.5rem;
           color: white;
-          box-shadow: 0 4px 12px rgba(1, 71, 173, 0.2);
+          box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
         }
 
         h1 {
@@ -82,39 +85,40 @@ export default function Home() {
           font-size: 2.2rem;
           font-weight: 700;
           margin: 0;
-          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 100%);
+          background: linear-gradient(135deg, #818CF8 0%, #34D399 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
-          color: #6B7280;
+          color: #9CA3AF;
           font-size: 1.1rem;
-          margin-top: 10px;
-          margin-bottom: 30px;
+          margin-top: 12px;
+          margin-bottom: 32px;
         }
 
         .status-badge {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background-color: #f0fdf4;
-          border: 1px solid #dcfce7;
-          color: #10B981;
-          padding: 8px 16px;
+          background-color: rgba(16, 185, 129, 0.1);
+          border: 1px solid rgba(16, 185, 129, 0.25);
+          color: #34D399;
+          padding: 8px 18px;
           border-radius: 100px;
           font-size: 0.85rem;
           font-weight: 600;
-          margin-bottom: 32px;
+          margin-bottom: 36px;
         }
 
         .status-dot {
           width: 8px;
           height: 8px;
-          background-color: #10B981;
+          background-color: #34D399;
           border-radius: 50%;
           display: inline-block;
           animation: pulse 1.8s infinite;
+          box-shadow: 0 0 8px #34D399;
         }
 
         .actions {
@@ -134,20 +138,21 @@ export default function Home() {
           font-weight: 600;
           font-size: 0.95rem;
           cursor: pointer;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
           text-decoration: none;
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 100%);
+          background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
           color: white;
           border: none;
-          box-shadow: 0 4px 12px rgba(1, 71, 173, 0.15);
+          box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
         }
 
         .btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 20px rgba(1, 71, 173, 0.25);
+          box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+          filter: brightness(1.1);
         }
 
         .btn-primary:active {
@@ -156,38 +161,39 @@ export default function Home() {
 
         .btn-secondary {
           background-color: transparent;
-          border: 1.5px solid #DCDCDC;
-          color: #0147AD;
+          border: 1.5px solid rgba(255, 255, 255, 0.1);
+          color: #818CF8;
         }
 
         .btn-secondary:hover {
-          background-color: #eff6ff;
-          border-color: #0147AD;
+          background-color: rgba(99, 102, 241, 0.08);
+          border-color: #818CF8;
+          color: white;
         }
 
         .routes-section {
           text-align: left;
-          border-top: 1.5px solid #DCDCDC;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
           padding-top: 30px;
         }
 
         .routes-section h3 {
           font-family: 'Outfit', sans-serif;
           font-size: 1rem;
-          color: #0147AD;
+          color: #818CF8;
           margin-bottom: 16px;
           font-weight: 600;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.8px;
         }
 
         .route-item {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 10px 0;
+          padding: 12px 0;
           font-size: 0.9rem;
-          border-bottom: 1px dashed #DCDCDC;
+          border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
         }
 
         .route-item:last-child {
@@ -196,12 +202,12 @@ export default function Home() {
 
         .route-path {
           font-family: monospace;
-          color: #0147AD;
+          color: #34D399;
           font-weight: 600;
         }
 
         .route-desc {
-          color: #6B7280;
+          color: #9CA3AF;
         }
 
         footer {
@@ -224,15 +230,15 @@ export default function Home() {
         @keyframes pulse {
           0% {
             transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
           }
           70% {
             transform: scale(1);
-            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
           }
           100% {
             transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
           }
         }
       `}</style>

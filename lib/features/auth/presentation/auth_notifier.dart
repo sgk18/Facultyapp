@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/network/api_client.dart';
 import '../domain/user_model.dart';
 import '../domain/auth_state.dart';
+import '../../splash/presentation/splash_controller.dart';
 
 class AuthNotifierState {
   final bool isInitializing;
@@ -87,7 +88,11 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
       final session = data.session;
       if (session != null) {
         final token = session.accessToken;
-        await _onboardToken(token);
+        final success = await _onboardToken(token);
+        if (success) {
+          _ref.read(splashFinishedProvider.notifier).state = false;
+          _ref.read(splashControllerProvider.notifier).initialize();
+        }
       } else {
         // Suppress initial empty notifications during loading to avoid redirect loops
         if (state.token != null) {

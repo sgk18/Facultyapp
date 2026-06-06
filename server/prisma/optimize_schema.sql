@@ -12,6 +12,8 @@ ALTER TABLE public.users ADD COLUMN IF NOT EXISTS notification_enabled boolean N
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS fcm_token text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS platform text;
 ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_id text UNIQUE;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_access_token text;
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS google_refresh_token text;
 
 -- 2. Add new consolidated columns to deadlines table
 ALTER TABLE public.deadlines ADD COLUMN IF NOT EXISTS reminder_enabled boolean NOT NULL DEFAULT false;
@@ -24,7 +26,9 @@ ALTER TABLE public.deadlines ADD COLUMN IF NOT EXISTS google_event_id text UNIQU
 UPDATE public.users u
 SET gmail_sync_enabled = g.sync_gmail,
     calendar_sync_enabled = g.sync_calendar,
-    google_id = g.google_id
+    google_id = g.google_id,
+    google_access_token = g.access_token,
+    google_refresh_token = g.refresh_token
 FROM public.google_accounts g
 WHERE u.id = g.user_id;
 

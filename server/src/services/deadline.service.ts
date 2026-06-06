@@ -116,11 +116,11 @@ export class DeadlineService {
       },
     });
 
-    // 2. Mock Google Calendar sync trigger
+    // 2. Push to Google Calendar if requested
     if (deadline.syncToCalendar) {
       const { SyncService } = require('./sync.service');
-      SyncService.syncCalendarForUser(user.id).catch((err: any) => {
-        console.error('Failed to sync new deadline to Google Calendar:', err);
+      SyncService.pushDeadlineToGoogleCalendar(deadline.id).catch((err: any) => {
+        console.error('Failed to push new deadline to Google Calendar:', err);
       });
     }
 
@@ -244,11 +244,21 @@ export class DeadlineService {
     const isCancelled = updatedDeadline.status === 'CANCELLED';
     const isCompleted = updatedDeadline.status === 'COMPLETED';
 
-    // Mock Google Calendar sync trigger
+    // Push or delete from Google Calendar based on sync preference
+    const { SyncService } = require('./sync.service');
     if (updatedDeadline.syncToCalendar) {
-      const { SyncService } = require('./sync.service');
-      SyncService.syncCalendarForUser(user.id).catch((err: any) => {
-        console.error('Failed to sync updated deadline to Google Calendar:', err);
+      SyncService.pushDeadlineToGoogleCalendar(updatedDeadline.id).catch((err: any) => {
+        console.error('Failed to push updated deadline to Google Calendar:', err);
+      });
+    } else if (deadline.googleEventId) {
+      // If it was synced previously but now syncToCalendar is false, remove from Google Calendar
+      SyncService.deleteDeadlineFromGoogleCalendar(user.id, deadline.googleEventId).catch((err: any) => {
+        console.error('Failed to delete unsynced event from Google Calendar:', err);
+      });
+      // Clear googleEventId in database
+      await prisma.deadline.update({
+        where: { id: updatedDeadline.id },
+        data: { googleEventId: null },
       });
     }
 
@@ -302,6 +312,13 @@ export class DeadlineService {
 
     if (deadline.ownerId !== user.id) {
       throw new ForbiddenError('You do not have permission to delete this deadline');
+    }
+
+    if (deadline.googleEventId) {
+      const { SyncService } = require('./sync.service');
+      SyncService.deleteDeadlineFromGoogleCalendar(user.id, deadline.googleEventId).catch((err: any) => {
+        console.error('Failed to delete calendar event for deleted deadline:', err);
+      });
     }
 
     await prisma.deadline.delete({

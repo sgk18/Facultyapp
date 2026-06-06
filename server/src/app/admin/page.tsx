@@ -28,6 +28,7 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState<User[]>([]);
   const [deadlines, setDeadlines] = useState<any[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [token, setToken] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -35,6 +36,11 @@ export default function AdminDashboard() {
   const [activityLoading, setActivityLoading] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
   const [message, setMessage] = useState({ text: '', type: '' });
+
+  // Department creation states
+  const [newDeptName, setNewDeptName] = useState('');
+  const [newDeptCode, setNewDeptCode] = useState('');
+  const [deptLoading, setDeptLoading] = useState(false);
 
   // Pagination state
   const [usersPage, setUsersPage] = useState(1);
@@ -53,7 +59,7 @@ export default function AdminDashboard() {
   // Search & Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
-  const [activeTab, setActiveTab] = useState<'USERS' | 'DEADLINES' | 'REMINDERS'>('USERS');
+  const [activeTab, setActiveTab] = useState<'USERS' | 'DEADLINES' | 'REMINDERS' | 'DEPARTMENTS'>('USERS');
 
   const showMsg = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type });
@@ -150,6 +156,7 @@ export default function AdminDashboard() {
     if (isAuthenticated && isAdmin && token) {
       fetchUsers(1);
       fetchActivities(1, 1);
+      fetchDepartments();
     }
   }, [isAuthenticated, isAdmin, token]);
 
@@ -246,6 +253,77 @@ export default function AdminDashboard() {
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const res = await fetch('/api/departments', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await res.json();
+      if (payload.success) {
+        setDepartments(payload.data || []);
+      }
+    } catch (err: any) {
+      console.error('Failed to fetch departments:', err);
+    }
+  };
+
+  const addDepartment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDeptName.trim() || !newDeptCode.trim()) {
+      showMsg('Department Name and Code are required', 'error');
+      return;
+    }
+    setDeptLoading(true);
+    try {
+      const res = await fetch('/api/departments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: newDeptName.trim(), code: newDeptCode.trim() }),
+      });
+      const payload = await res.json();
+      if (payload.success) {
+        showMsg('Department created successfully', 'success');
+        setNewDeptName('');
+        setNewDeptCode('');
+        fetchDepartments();
+      } else {
+        showMsg(payload.error || 'Failed to create department', 'error');
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'Department creation failed', 'error');
+    } finally {
+      setDeptLoading(false);
+    }
+  };
+
+  const assignDepartment = async (userId: string, departmentId: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId, departmentId }),
+      });
+      const payload = await res.json();
+      if (payload.success) {
+        showMsg('Department assigned successfully', 'success');
+        fetchUsers(usersPage);
+      } else {
+        showMsg(payload.error || 'Failed to assign department', 'error');
+      }
+    } catch (err: any) {
+      showMsg(err.message || 'Department assignment failed', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleUsersPageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= usersTotalPages) {
       fetchUsers(newPage);
@@ -336,25 +414,46 @@ export default function AdminDashboard() {
     return (
       <div className="login-container">
         <style jsx global>{`
+          @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
           body {
             margin: 0;
-            background-color: #DCDCDC;
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent),
+                        radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.05), transparent),
+                        #0B0F19;
             font-family: 'Inter', sans-serif;
+            color: #F3F4F6;
+            min-height: 100vh;
           }
           .login-container {
             min-height: 100vh;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            background-color: #DCDCDC;
+            gap: 20px;
+          }
+          .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(99, 102, 241, 0.12);
+            border-left-color: #6366F1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
           }
           .loading-text {
             font-family: 'Outfit', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             font-weight: 600;
-            color: #4B5563;
+            color: #9CA3AF;
+            letter-spacing: 0.5px;
+          }
+          @keyframes spin {
+            to { transform: rotate(360deg); }
           }
         `}</style>
+        <div className="spinner"></div>
         <div className="loading-text">Verifying Portal Security...</div>
       </div>
     );
@@ -368,9 +467,12 @@ export default function AdminDashboard() {
 
           body {
             margin: 0;
-            background-color: #DCDCDC;
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.06), transparent),
+                        radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.06), transparent),
+                        #080C14;
             font-family: 'Inter', sans-serif;
-            color: #111827;
+            color: #F3F4F6;
+            min-height: 100vh;
           }
 
           .login-container {
@@ -379,79 +481,98 @@ export default function AdminDashboard() {
             align-items: center;
             justify-content: center;
             padding: 20px;
-            background-color: #DCDCDC;
           }
 
           .login-card {
-            background: #FFFFFF;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 16px;
-            padding: 40px;
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 48px;
             width: 100%;
-            max-width: 450px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            max-width: 440px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3),
+                        0 0 40px rgba(99, 102, 241, 0.05);
             text-align: center;
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           .logo {
-            width: 54px;
-            height: 54px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 50%, #4A84F0 100%);
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Outfit', sans-serif;
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 700;
-            margin: 0 auto 24px auto;
-            box-shadow: 0 8px 20px rgba(1, 71, 173, 0.15);
+            margin: 0 auto 28px auto;
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.35);
+            position: relative;
+          }
+          
+          .logo::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #4F46E5, #06B6D4);
+            z-index: -1;
+            opacity: 0.5;
+            filter: blur(8px);
           }
 
           h2 {
             margin: 0 0 8px 0;
             font-family: 'Outfit', sans-serif;
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            color: #111827;
+            color: #FFFFFF;
+            letter-spacing: -0.5px;
           }
 
           p.tagline {
-            color: #6B7280;
-            font-size: 0.9rem;
-            margin: 0 0 32px 0;
+            color: #9CA3AF;
+            font-size: 0.95rem;
+            margin: 0 0 36px 0;
+            line-height: 1.5;
           }
 
           .btn-login {
             width: 100%;
-            background: #0147AD;
+            background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
             color: white;
             border: none;
-            padding: 14px;
-            border-radius: 12px;
+            padding: 16px;
+            border-radius: 14px;
             font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(1, 71, 173, 0.15);
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 12px;
-            transition: all 0.2s ease;
-            margin-top: 10px;
+            transition: all 0.25s ease;
           }
 
           .btn-login:hover {
-            background-color: #1D5FD1;
-            transform: translateY(-1px);
-            box-shadow: 0 8px 20px rgba(1, 71, 173, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
+            filter: brightness(1.1);
+          }
+
+          .btn-login:active {
+            transform: translateY(0);
           }
 
           .btn-login:disabled {
-            background-color: #9CA3AF;
+            background: #374151;
+            color: #9CA3AF;
             cursor: not-allowed;
             box-shadow: none;
             transform: none;
@@ -460,13 +581,12 @@ export default function AdminDashboard() {
           .google-icon {
             width: 20px;
             height: 20px;
-            fill: currentColor;
           }
 
           .toast {
-            padding: 12px 16px;
+            padding: 14px 18px;
             border-radius: 12px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             font-weight: 500;
             font-size: 0.9rem;
             text-align: left;
@@ -474,19 +594,23 @@ export default function AdminDashboard() {
           }
 
           .toast-error {
-            background-color: #fef2f2;
-            color: #EF4444;
-            border: 1px solid #fee2e2;
+            background: rgba(239, 68, 68, 0.1);
+            color: #F87171;
+            border: 1px solid rgba(239, 68, 68, 0.25);
           }
 
           .toast-success {
-            background-color: #f0fdf4;
-            color: #10B981;
-            border: 1px solid #dcfce7;
+            background: rgba(16, 185, 129, 0.1);
+            color: #34D399;
+            border: 1px solid rgba(16, 185, 129, 0.25);
           }
 
           @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
           }
         `}</style>
@@ -522,9 +646,12 @@ export default function AdminDashboard() {
 
           body {
             margin: 0;
-            background-color: #DCDCDC;
+            background: radial-gradient(circle at top right, rgba(239, 68, 68, 0.05), transparent),
+                        radial-gradient(circle at bottom left, rgba(8, 12, 20, 0.05), transparent),
+                        #080C14;
             font-family: 'Inter', sans-serif;
-            color: #111827;
+            color: #F3F4F6;
+            min-height: 100vh;
           }
 
           .login-container {
@@ -533,67 +660,72 @@ export default function AdminDashboard() {
             align-items: center;
             justify-content: center;
             padding: 20px;
-            background-color: #DCDCDC;
           }
 
           .login-card {
-            background: #FFFFFF;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 16px;
-            padding: 40px;
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 24px;
+            padding: 48px;
             width: 100%;
-            max-width: 450px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            max-width: 440px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3),
+                        0 0 40px rgba(239, 68, 68, 0.05);
             text-align: center;
-            animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
           }
 
           .logo-error {
-            width: 54px;
-            height: 54px;
-            border-radius: 12px;
-            background: #EF4444;
-            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: rgba(239, 68, 68, 0.15);
+            color: #EF4444;
+            border: 1.5px solid rgba(239, 68, 68, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: 'Outfit', sans-serif;
-            font-size: 1.8rem;
+            font-size: 2rem;
             font-weight: 700;
-            margin: 0 auto 24px auto;
-            box-shadow: 0 8px 20px rgba(239, 68, 68, 0.15);
+            margin: 0 auto 28px auto;
+            box-shadow: 0 8px 24px rgba(239, 68, 68, 0.15);
           }
 
           h2 {
-            margin: 0 0 8px 0;
+            margin: 0 0 12px 0;
             font-family: 'Outfit', sans-serif;
-            font-size: 1.6rem;
+            font-size: 1.8rem;
             font-weight: 700;
-            color: #111827;
+            color: #FFFFFF;
+            letter-spacing: -0.5px;
           }
 
           p.tagline {
-            color: #6B7280;
-            font-size: 0.9rem;
-            margin: 0 0 32px 0;
+            color: #9CA3AF;
+            font-size: 0.95rem;
+            margin: 0 0 36px 0;
+            line-height: 1.6;
           }
 
           .btn-logout-error {
             width: 100%;
-            background: #374151;
-            color: white;
-            border: none;
-            padding: 14px;
-            border-radius: 12px;
+            background: #1F2937;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #F3F4F6;
+            padding: 16px;
+            border-radius: 14px;
             font-family: 'Outfit', sans-serif;
-            font-size: 1rem;
+            font-size: 1.05rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s ease;
           }
 
           .btn-logout-error:hover {
-            background-color: #4B5563;
+            background-color: #374151;
+            transform: translateY(-1px);
           }
         `}</style>
 
@@ -618,199 +750,269 @@ export default function AdminDashboard() {
 
         body {
           margin: 0;
-          background-color: #DCDCDC;
+          background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.04), transparent),
+                      radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.04), transparent),
+                      #0B0F19;
           font-family: 'Inter', sans-serif;
-          color: #111827;
+          color: #F3F4F6;
+          min-height: 100vh;
         }
 
         .admin-container {
-          max-width: 1200px;
+          max-width: 1240px;
           margin: 0 auto;
           padding: 40px 20px;
-          animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 40px;
-          background: linear-gradient(135deg, #0147AD 0%, #1D5FD1 50%, #4A84F0 100%);
+          margin-bottom: 32px;
+          background: rgba(17, 24, 39, 0.65);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.08);
           padding: 24px 32px;
-          border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(1, 71, 173, 0.15);
+          border-radius: 20px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25),
+                      0 0 30px rgba(99, 102, 241, 0.03);
           color: white;
         }
 
         .logo-section h1 {
           font-family: 'Outfit', sans-serif;
-          font-size: 1.6rem;
+          font-size: 1.75rem;
           font-weight: 700;
           margin: 0;
+          background: linear-gradient(135deg, #818CF8 0%, #34D399 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
         }
 
         .logo-section p {
-          color: #bfdbfe;
-          font-size: 0.85rem;
-          margin: 4px 0 0 0;
+          color: #9CA3AF;
+          font-size: 0.88rem;
+          margin: 6px 0 0 0;
+          font-weight: 500;
         }
 
         .btn-logout {
-          background-color: rgba(255, 255, 255, 0.15);
-          border: 1px solid rgba(255, 255, 255, 0.25);
-          color: white;
-          padding: 8px 18px;
+          background-color: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          color: #F3F4F6;
+          padding: 10px 20px;
           border-radius: 12px;
           cursor: pointer;
           font-family: 'Outfit', sans-serif;
           font-weight: 600;
-          font-size: 0.85rem;
-          transition: all 0.2s;
+          font-size: 0.9rem;
+          transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .btn-logout:hover {
-          background-color: rgba(255, 255, 255, 0.25);
+          background-color: #EF4444;
+          border-color: #EF4444;
+          color: white;
+          box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
+          transform: translateY(-1px);
+        }
+
+        .btn-logout:active {
+          transform: translateY(0);
         }
 
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-          gap: 20px;
-          margin-bottom: 40px;
+          gap: 24px;
+          margin-bottom: 36px;
         }
 
         .stat-card {
-          background: white;
-          border: 1.5px solid #DCDCDC;
-          border-radius: 16px;
-          padding: 24px;
+          background: rgba(17, 24, 39, 0.55);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 20px;
+          padding: 28px;
           display: flex;
           align-items: center;
-          gap: 20px;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-          transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s;
+          gap: 22px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+          transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .stat-card:hover {
-          transform: translateY(-2px);
-          border-color: #0147AD;
-          box-shadow: 0 8px 24px rgba(1, 71, 173, 0.08);
+          transform: translateY(-4px);
+          border-color: rgba(99, 102, 241, 0.3);
+          box-shadow: 0 12px 30px rgba(99, 102, 241, 0.1),
+                      0 0 20px rgba(6, 182, 212, 0.05);
         }
 
         .stat-icon {
-          width: 52px;
-          height: 52px;
-          border-radius: 12px;
+          width: 56px;
+          height: 56px;
+          border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 1.5rem;
+          font-size: 1.6rem;
+          transition: transform 0.3s;
+        }
+
+        .stat-card:hover .stat-icon {
+          transform: scale(1.1) rotate(2deg);
         }
 
         .blue-icon {
-          background: rgba(1, 71, 173, 0.08);
-          color: #0147AD;
+          background: rgba(99, 102, 241, 0.12);
+          color: #818CF8;
+          border: 1px solid rgba(99, 102, 241, 0.2);
         }
 
         .indigo-icon {
-          background: rgba(29, 95, 209, 0.08);
-          color: #1D5FD1;
+          background: rgba(16, 185, 129, 0.12);
+          color: #34D399;
+          border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
         .cyan-icon {
-          background: rgba(74, 132, 240, 0.08);
-          color: #4A84F0;
+          background: rgba(6, 182, 212, 0.12);
+          color: #22D3EE;
+          border: 1px solid rgba(6, 182, 212, 0.2);
         }
 
         .stat-details h3 {
           margin: 0;
           font-family: 'Outfit', sans-serif;
-          font-size: 2rem;
+          font-size: 2.2rem;
           font-weight: 700;
-          color: #111827;
+          color: #FFFFFF;
+          letter-spacing: -1px;
         }
 
         .stat-details p {
           margin: 4px 0 0 0;
-          color: #6B7280;
-          font-size: 0.85rem;
+          color: #9CA3AF;
+          font-size: 0.82rem;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
+          letter-spacing: 1px;
           font-weight: 600;
         }
 
         .msg-toast {
-          padding: 12px 20px;
+          padding: 14px 24px;
           border-radius: 12px;
-          margin-bottom: 25px;
+          margin-bottom: 28px;
           font-weight: 500;
-          animation: slideIn 0.3s ease-out;
+          font-size: 0.95rem;
+          backdrop-filter: blur(8px);
+          animation: slideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .msg-success {
-          background-color: #f0fdf4;
-          color: #10B981;
-          border: 1px solid #dcfce7;
+          background: rgba(16, 185, 129, 0.1);
+          color: #34D399;
+          border: 1px solid rgba(16, 185, 129, 0.25);
+          box-shadow: 0 4px 20px rgba(16, 185, 129, 0.1);
         }
 
         .msg-error {
-          background-color: #fef2f2;
-          color: #EF4444;
-          border: 1px solid #fee2e2;
+          background: rgba(239, 68, 68, 0.1);
+          color: #F87171;
+          border: 1px solid rgba(239, 68, 68, 0.25);
+          box-shadow: 0 4px 20px rgba(239, 68, 68, 0.1);
         }
 
-        /* Search & Filters Controls */
+        .tabs-container {
+          display: flex;
+          gap: 6px;
+          margin-bottom: 28px;
+          border-bottom: 1.5px solid rgba(255, 255, 255, 0.08);
+          padding-bottom: 8px;
+        }
+
+        .tab-btn {
+          padding: 12px 24px;
+          border: none;
+          background: transparent;
+          color: #9CA3AF;
+          font-family: 'Outfit', sans-serif;
+          font-weight: 600;
+          font-size: 0.95rem;
+          cursor: pointer;
+          border-radius: 10px;
+          transition: all 0.2s ease;
+        }
+
+        .tab-btn:hover {
+          color: #FFFFFF;
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        .tab-btn.active {
+          color: #FFFFFF;
+          background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
+          box-shadow: 0 6px 20px rgba(79, 70, 229, 0.2);
+        }
+
         .controls-card {
-          background: white;
-          border: 1.5px solid #DCDCDC;
-          border-radius: 16px;
+          background: rgba(17, 24, 39, 0.45);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 20px;
           padding: 20px 24px;
           margin-bottom: 24px;
           display: flex;
           gap: 16px;
           flex-wrap: wrap;
           align-items: center;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         }
 
         .search-input {
           flex: 1;
           min-width: 250px;
-          padding: 10px 14px;
+          padding: 12px 18px;
           border-radius: 12px;
-          border: 1.5px solid #DCDCDC;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background-color: rgba(10, 15, 26, 0.7);
+          color: #FFFFFF;
           outline: none;
-          font-size: 0.9rem;
-          transition: border-color 0.2s;
+          font-size: 0.92rem;
+          transition: all 0.25s ease;
         }
 
         .search-input:focus {
-          border-color: #0147AD;
-          box-shadow: 0 0 0 4px rgba(1, 71, 173, 0.15);
+          border-color: #6366F1;
+          background-color: rgba(10, 15, 26, 0.9);
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
         }
 
         .filter-select {
-          padding: 10px 14px;
+          padding: 12px 18px;
           border-radius: 12px;
-          border: 1.5px solid #DCDCDC;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          background-color: rgba(10, 15, 26, 0.7);
+          color: #FFFFFF;
           outline: none;
-          font-size: 0.9rem;
-          background-color: white;
-          color: #111827;
+          font-size: 0.92rem;
           cursor: pointer;
-          transition: border-color 0.2s;
+          transition: all 0.25s ease;
         }
 
         .filter-select:focus {
-          border-color: #0147AD;
+          border-color: #6366F1;
+          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
         }
 
         .table-container {
-          background: white;
-          border: 1.5px solid #DCDCDC;
-          border-radius: 16px;
+          background: rgba(17, 24, 39, 0.55);
+          backdrop-filter: blur(16px);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 20px;
           overflow: hidden;
-          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+          box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
         }
 
         table {
@@ -820,23 +1022,28 @@ export default function AdminDashboard() {
         }
 
         th {
-          background-color: #f8fafc;
-          padding: 16px 24px;
+          background-color: rgba(10, 15, 26, 0.55);
+          padding: 18px 24px;
           font-family: 'Outfit', sans-serif;
           font-weight: 600;
-          color: #6B7280;
-          font-size: 0.8rem;
+          color: #9CA3AF;
+          font-size: 0.85rem;
           text-transform: uppercase;
-          letter-spacing: 0.5px;
-          border-bottom: 1.5px solid #DCDCDC;
+          letter-spacing: 0.8px;
+          border-bottom: 1.5px solid rgba(255, 255, 255, 0.06);
         }
 
         td {
-          padding: 18px 24px;
-          border-bottom: 1px solid #DCDCDC;
-          font-size: 0.9rem;
+          padding: 20px 24px;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+          font-size: 0.92rem;
           vertical-align: middle;
-          color: #111827;
+          color: #E5E7EB;
+          transition: background-color 0.2s ease;
+        }
+
+        tr:hover td {
+          background-color: rgba(255, 255, 255, 0.015);
         }
 
         tr:last-child td {
@@ -846,72 +1053,75 @@ export default function AdminDashboard() {
         .faculty-profile {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 14px;
         }
 
         .faculty-avatar {
-          width: 40px;
-          height: 40px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           object-fit: cover;
-          background: linear-gradient(135deg, #0147AD, #1D5FD1);
+          background: linear-gradient(135deg, #4F46E5, #06B6D4);
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Outfit', sans-serif;
           font-weight: 600;
-          font-size: 0.95rem;
+          font-size: 1rem;
           color: white;
+          border: 1.5px solid rgba(255, 255, 255, 0.1);
         }
 
         .faculty-info h4 {
           margin: 0;
-          font-size: 0.9rem;
+          font-size: 0.95rem;
           font-weight: 600;
-          color: #111827;
+          color: #FFFFFF;
         }
 
         .faculty-info p {
-          margin: 2px 0 0 0;
-          color: #6B7280;
-          font-size: 0.8rem;
+          margin: 4px 0 0 0;
+          color: #9CA3AF;
+          font-size: 0.82rem;
         }
 
         .dept-tag {
-          background-color: #f3f4f6;
-          border: 1px solid #DCDCDC;
-          color: #111827;
-          padding: 4px 10px;
+          background-color: rgba(99, 102, 241, 0.08);
+          border: 1px solid rgba(99, 102, 241, 0.2);
+          color: #818CF8;
+          padding: 4px 12px;
           border-radius: 100px;
-          font-size: 0.7rem;
+          font-size: 0.72rem;
           font-weight: 600;
+          letter-spacing: 0.5px;
         }
 
         .role-badge {
           display: inline-block;
-          padding: 4px 10px;
-          border-radius: 6px;
-          font-size: 0.7rem;
+          padding: 6px 12px;
+          border-radius: 8px;
+          font-size: 0.72rem;
           font-weight: 700;
-          letter-spacing: 0.5px;
+          letter-spacing: 0.8px;
+          text-transform: uppercase;
         }
 
         .role-admin {
-          background-color: #fee2e2;
-          color: #EF4444;
-          border: 1px solid #fecaca;
+          background-color: rgba(239, 68, 68, 0.15);
+          color: #F87171;
+          border: 1px solid rgba(239, 68, 68, 0.25);
         }
 
         .role-hod {
-          background-color: #dcfce7;
-          color: #10B981;
-          border: 1px solid #bbf7d0;
+          background-color: rgba(16, 185, 129, 0.15);
+          color: #34D399;
+          border: 1px solid rgba(16, 185, 129, 0.25);
         }
 
         .role-faculty {
-          background-color: #eff6ff;
-          color: #0147AD;
-          border: 1px solid #bfdbfe;
+          background-color: rgba(59, 130, 246, 0.15);
+          color: #60A5FA;
+          border: 1px solid rgba(59, 130, 246, 0.25);
         }
 
         .action-cell {
@@ -920,106 +1130,54 @@ export default function AdminDashboard() {
         }
 
         .btn-action {
-          padding: 6px 12px;
-          border-radius: 12px;
-          font-size: 0.8rem;
+          padding: 8px 16px;
+          border-radius: 10px;
+          font-size: 0.82rem;
           font-family: 'Outfit', sans-serif;
           font-weight: 600;
           cursor: pointer;
-          transition: all 0.2s;
+          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
           border: none;
         }
 
         .btn-promote {
-          background-color: #f0fdf4;
-          color: #10B981;
-          border: 1px solid #bbf7d0;
+          background-color: rgba(16, 185, 129, 0.08);
+          color: #34D399;
+          border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
         .btn-promote:hover {
           background-color: #10B981;
           color: white;
+          box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+          transform: translateY(-1px);
         }
 
         .btn-demote {
-          background-color: #fef2f2;
-          color: #EF4444;
-          border: 1px solid #fecaca;
+          background-color: rgba(239, 68, 68, 0.08);
+          color: #F87171;
+          border: 1px solid rgba(239, 68, 68, 0.2);
         }
 
         .btn-demote:hover {
           background-color: #EF4444;
           color: white;
-        }
-
-        @keyframes slideIn {
-          from {
-            transform: translateY(-10px);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        .tabs-container {
-          display: flex;
-          gap: 16px;
-          margin-bottom: 28px;
-          border-bottom: 1.5px solid #DCDCDC;
-          padding-bottom: 2px;
-        }
-
-        .tab-btn {
-          padding: 12px 24px;
-          border: none;
-          background: transparent;
-          color: #4B5563;
-          font-family: 'Outfit', sans-serif;
-          font-weight: 600;
-          font-size: 0.95rem;
-          cursor: pointer;
-          position: relative;
-          transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .tab-btn:hover {
-          color: #0147AD;
-        }
-
-        .tab-btn.active {
-          color: #0147AD;
-        }
-
-        .tab-btn.active::after {
-          content: '';
-          position: absolute;
-          bottom: -2.5px;
-          left: 0;
-          width: 100%;
-          height: 3px;
-          background: #0147AD;
-          border-radius: 2px;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+          transform: translateY(-1px);
         }
 
         .pagination-container {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          padding: 16px 24px;
-          border-top: 1.5px solid #DCDCDC;
-          background: #f8fafc;
+          padding: 20px 24px;
+          border-top: 1px solid rgba(255, 255, 255, 0.06);
+          background: rgba(10, 15, 26, 0.4);
         }
 
         .pagination-info {
-          font-size: 0.85rem;
-          color: #6B7280;
+          font-size: 0.88rem;
+          color: #9CA3AF;
           font-weight: 500;
         }
 
@@ -1031,41 +1189,53 @@ export default function AdminDashboard() {
 
         .btn-pagination {
           padding: 8px 16px;
-          border-radius: 8px;
-          font-size: 0.85rem;
+          border-radius: 10px;
+          font-size: 0.88rem;
           font-family: 'Outfit', sans-serif;
           font-weight: 600;
           cursor: pointer;
           transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-          border: 1px solid #DCDCDC;
-          background-color: white;
-          color: #4B5563;
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          background-color: rgba(17, 24, 39, 0.6);
+          color: #E5E7EB;
         }
 
         .btn-pagination:hover:not(:disabled) {
-          border-color: #0147AD;
-          color: #0147AD;
-          background-color: rgba(1, 71, 173, 0.04);
+          border-color: #6366F1;
+          color: #FFFFFF;
+          background-color: rgba(99, 102, 241, 0.1);
           transform: translateY(-1px);
         }
 
-        .btn-pagination:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
         .btn-pagination:disabled {
-          background-color: #f3f4f6;
-          color: #9CA3AF;
+          background-color: rgba(17, 24, 39, 0.3);
+          color: #4B5563;
           cursor: not-allowed;
-          border-color: #e5e7eb;
+          border-color: rgba(255, 255, 255, 0.05);
         }
 
         .page-indicator {
-          font-size: 0.85rem;
+          font-size: 0.88rem;
           font-weight: 600;
-          color: #111827;
+          color: #FFFFFF;
           min-width: 32px;
           text-align: center;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+          from {
+            transform: translateY(-10px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
         }
       `}</style>
 
@@ -1151,6 +1321,12 @@ export default function AdminDashboard() {
         >
           Created Reminders
         </button>
+        <button
+          className={`tab-btn ${activeTab === 'DEPARTMENTS' ? 'active' : ''}`}
+          onClick={() => setActiveTab('DEPARTMENTS')}
+        >
+          Manage Departments
+        </button>
       </div>
 
       {activeTab === 'USERS' && (
@@ -1211,7 +1387,19 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       <td>
-                        <span className="dept-tag">{user.department?.code || 'GEN'}</span>
+                        <select
+                          className="filter-select"
+                          style={{ padding: '6px 10px', fontSize: '0.8rem', border: '1px solid rgba(255, 255, 255, 0.1)', backgroundColor: 'rgba(10, 15, 26, 0.7)', color: 'white', borderRadius: '8px' }}
+                          value={user.department?.id || ''}
+                          onChange={(e) => assignDepartment(user.id, e.target.value)}
+                        >
+                          <option value="" disabled style={{ backgroundColor: '#0B0F19' }}>Select Department</option>
+                          {departments.map((dept) => (
+                            <option key={dept.id} value={dept.id} style={{ backgroundColor: '#0B0F19' }}>
+                              {dept.name} ({dept.code})
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td>
                         <span className={`role-badge role-${user.role.toLowerCase()}`}>
@@ -1313,8 +1501,8 @@ export default function AdminDashboard() {
                           <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{d.owner?.email || 'N/A'}</p>
                         </div>
                       </td>
-                      <td style={{ fontWeight: '600', color: '#0147AD' }}>{d.title}</td>
-                      <td style={{ color: '#4B5563', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.description}>{d.description}</td>
+                      <td style={{ fontWeight: '600', color: '#818CF8' }}>{d.title}</td>
+                      <td style={{ color: '#9CA3AF', maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={d.description}>{d.description}</td>
                       <td>
                         <span className="dept-tag">{d.department?.code || 'GEN'}</span>
                       </td>
@@ -1406,8 +1594,8 @@ export default function AdminDashboard() {
                           <p style={{ margin: '2px 0 0 0', color: '#6B7280', fontSize: '0.8rem' }}>{r.user?.email}</p>
                         </div>
                       </td>
-                      <td style={{ fontWeight: '600', color: '#0147AD' }}>{r.title}</td>
-                      <td style={{ color: '#4B5563', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.description || ''}>{r.description || 'N/A'}</td>
+                      <td style={{ fontWeight: '600', color: '#818CF8' }}>{r.title}</td>
+                      <td style={{ color: '#9CA3AF', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.description || ''}>{r.description || 'N/A'}</td>
                       <td style={{ fontSize: '0.85rem' }}>
                         {new Date(r.reminderTime).toLocaleString('en-US', {
                           dateStyle: 'medium',
@@ -1462,6 +1650,90 @@ export default function AdminDashboard() {
               )}
             </>
           )}
+        </div>
+      )}
+
+      {activeTab === 'DEPARTMENTS' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', animation: 'fadeIn 0.3s' }}>
+          {/* Departments List */}
+          <div className="table-container">
+            <table style={{ minHeight: '100px' }}>
+              <thead>
+                <tr>
+                  <th>Department Name</th>
+                  <th>Code</th>
+                  <th>ID</th>
+                </tr>
+              </thead>
+              <tbody>
+                {departments.map((dept) => (
+                  <tr key={dept.id}>
+                    <td style={{ fontWeight: '600', color: '#818CF8' }}>{dept.name}</td>
+                    <td>
+                      <span className="dept-tag">{dept.code}</span>
+                    </td>
+                    <td style={{ fontSize: '0.8rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                      {dept.id}
+                    </td>
+                  </tr>
+                ))}
+                {departments.length === 0 && (
+                  <tr>
+                    <td colSpan={3} style={{ textAlign: 'center', color: '#94a3b8', padding: '40px' }}>
+                      No departments found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          {/* Add Department Form */}
+          <div className="controls-card" style={{ flexDirection: 'column', alignItems: 'stretch', height: 'fit-content' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontFamily: 'Outfit, sans-serif', fontSize: '1.25rem', color: '#FFFFFF', fontWeight: 700 }}>
+              Add Department
+            </h3>
+            <form onSubmit={addDepartment} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#9CA3AF' }}>Name</label>
+                <input
+                  type="text"
+                  className="search-input"
+                  style={{ minWidth: 'auto' }}
+                  placeholder="e.g. Computer Science"
+                  value={newDeptName}
+                  onChange={(e) => setNewDeptName(e.target.value)}
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '0.8rem', fontWeight: 600, color: '#9CA3AF' }}>Code</label>
+                <input
+                  type="text"
+                  className="search-input"
+                  style={{ minWidth: 'auto' }}
+                  placeholder="e.g. CS"
+                  value={newDeptCode}
+                  onChange={(e) => setNewDeptCode(e.target.value)}
+                />
+              </div>
+              <button
+                type="submit"
+                className="btn-pagination"
+                style={{
+                  backgroundColor: '#4F46E5',
+                  color: 'white',
+                  borderColor: '#4F46E5',
+                  padding: '12px',
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  marginTop: '10px'
+                }}
+                disabled={deptLoading}
+              >
+                {deptLoading ? 'Creating...' : 'Create Department'}
+              </button>
+            </form>
+          </div>
         </div>
       )}
     </div>
