@@ -25,12 +25,13 @@ export default function Home() {
 
         body {
           margin: 0;
-          background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.05), transparent),
-                      radial-gradient(circle at bottom left, rgba(6, 182, 212, 0.05), transparent),
-                      #0B0F19;
+          background: radial-gradient(circle at top right, rgba(1, 71, 173, 0.06), transparent),
+                      radial-gradient(circle at bottom left, rgba(74, 132, 240, 0.06), transparent),
+                      #DCDCDC;
           font-family: 'Inter', sans-serif;
-          color: #F3F4F6;
+          color: #111827;
           overflow-x: hidden;
+          min-height: 100vh;
         }
 
         .home-container {
@@ -44,16 +45,16 @@ export default function Home() {
         }
 
         .card {
-          background: rgba(17, 24, 39, 0.7);
+          background: rgba(255, 255, 255, 0.85);
           backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(1, 71, 173, 0.08);
           border-radius: 24px;
           padding: 48px;
           max-width: 650px;
           width: 100%;
           text-align: center;
-          box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3),
-                      0 0 40px rgba(99, 102, 241, 0.05);
+          box-shadow: 0 20px 50px rgba(1, 71, 173, 0.05),
+                      0 0 30px rgba(1, 71, 173, 0.02);
           animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -61,23 +62,23 @@ export default function Home() {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 12px;
+          gap: 14px;
           margin-bottom: 24px;
         }
 
         .logo-symbol {
-          width: 44px;
-          height: 44px;
+          width: 46px;
+          height: 46px;
           border-radius: 12px;
-          background: linear-gradient(135deg, #4F46E5 0%, #06B6D4 100%);
+          background: linear-gradient(135deg, #0147AD 0%, #4A84F0 100%);
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: 'Outfit', sans-serif;
           font-weight: 700;
-          font-size: 1.5rem;
+          font-size: 1.6rem;
           color: white;
-          box-shadow: 0 6px 20px rgba(79, 70, 229, 0.35);
+          box-shadow: 0 6px 20px rgba(1, 71, 173, 0.25);
         }
 
         h1 {
@@ -85,25 +86,26 @@ export default function Home() {
           font-size: 2.2rem;
           font-weight: 700;
           margin: 0;
-          background: linear-gradient(135deg, #818CF8 0%, #34D399 100%);
+          background: linear-gradient(135deg, #0147AD 0%, #4A84F0 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
-          color: #9CA3AF;
+          color: #4B5563;
           font-size: 1.1rem;
           margin-top: 12px;
           margin-bottom: 32px;
+          font-weight: 500;
         }
 
         .status-badge {
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          background-color: rgba(16, 185, 129, 0.1);
-          border: 1px solid rgba(16, 185, 129, 0.25);
-          color: #34D399;
+          background-color: rgba(16, 185, 129, 0.08);
+          border: 1px solid rgba(16, 185, 129, 0.2);
+          color: #059669;
           padding: 8px 18px;
           border-radius: 100px;
           font-size: 0.85rem;
@@ -114,11 +116,11 @@ export default function Home() {
         .status-dot {
           width: 8px;
           height: 8px;
-          background-color: #34D399;
+          background-color: #10B981;
           border-radius: 50%;
           display: inline-block;
           animation: pulse 1.8s infinite;
-          box-shadow: 0 0 8px #34D399;
+          box-shadow: 0 0 8px #10B981;
         }
 
         .actions {
@@ -143,16 +145,16 @@ export default function Home() {
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
+          background: linear-gradient(135deg, #0147AD 0%, #4A84F0 100%);
           color: white;
           border: none;
-          box-shadow: 0 4px 15px rgba(79, 70, 229, 0.25);
+          box-shadow: 0 4px 15px rgba(1, 71, 173, 0.2);
         }
 
         .btn-primary:hover {
           transform: translateY(-2px);
-          box-shadow: 0 8px 25px rgba(79, 70, 229, 0.4);
-          filter: brightness(1.1);
+          box-shadow: 0 8px 25px rgba(1, 71, 173, 0.3);
+          filter: brightness(1.05);
         }
 
         .btn-primary:active {
@@ -161,26 +163,25 @@ export default function Home() {
 
         .btn-secondary {
           background-color: transparent;
-          border: 1.5px solid rgba(255, 255, 255, 0.1);
-          color: #818CF8;
+          border: 1.5px solid rgba(1, 71, 173, 0.2);
+          color: #0147AD;
         }
 
         .btn-secondary:hover {
-          background-color: rgba(99, 102, 241, 0.08);
-          border-color: #818CF8;
-          color: white;
+          background-color: rgba(1, 71, 173, 0.05);
+          border-color: #0147AD;
         }
 
         .routes-section {
           text-align: left;
-          border-top: 1px solid rgba(255, 255, 255, 0.08);
+          border-top: 1px solid rgba(0, 0, 0, 0.08);
           padding-top: 30px;
         }
 
         .routes-section h3 {
           font-family: 'Outfit', sans-serif;
           font-size: 1rem;
-          color: #818CF8;
+          color: #0147AD;
           margin-bottom: 16px;
           font-weight: 600;
           text-transform: uppercase;
@@ -193,7 +194,7 @@ export default function Home() {
           align-items: center;
           padding: 12px 0;
           font-size: 0.9rem;
-          border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+          border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
         }
 
         .route-item:last-child {
@@ -202,12 +203,12 @@ export default function Home() {
 
         .route-path {
           font-family: monospace;
-          color: #34D399;
+          color: #0147AD;
           font-weight: 600;
         }
 
         .route-desc {
-          color: #9CA3AF;
+          color: #4B5563;
         }
 
         footer {
@@ -230,15 +231,15 @@ export default function Home() {
         @keyframes pulse {
           0% {
             transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
           }
           70% {
             transform: scale(1);
-            box-shadow: 0 0 0 8px rgba(52, 211, 153, 0);
+            box-shadow: 0 0 0 8px rgba(16, 185, 129, 0);
           }
           100% {
             transform: scale(0.95);
-            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
           }
         }
       `}</style>
