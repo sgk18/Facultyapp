@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-import 'package:flutter/foundation.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -186,15 +186,46 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
     return null;
   }
 
+  // Native Google Sign-In — avoids browser redirect_uri entirely
+  static final _googleSignIn = GoogleSignIn(
+    serverClientId:
+        '685264346083-tpmshfucdieg0ked3rg9meopn5l2ijo3.apps.googleusercontent.com',
+  );
+
   Future<void> signInWithGoogle() async {
     state = state.copyWith(errorMessage: null);
     try {
-      await Supabase.instance.client.auth.signInWithOAuth(
-        OAuthProvider.google,
-        redirectTo: kIsWeb ? 'http://localhost:8080' : 'facultyapp://auth/callback',
+      // Force account picker to show every time
+      await _googleSignIn.signOut();
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return; // user cancelled
+
+      final googleAuth = await googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      final accessToken = googleAuth.accessToken;
+
+      if (idToken == null) {
+        state = state.copyWith(
+          errorMessage: 'Google did not return an ID token. Please try again.',
+        );
+        return;
+      }
+
+      // Exchange Google ID token for a Supabase session
+      await Supabase.instance.client.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
       );
     } catch (e) {
-      state = state.copyWith(errorMessage: 'Google Sign-In failed to initialize.');
+      final msg = e.toString();
+      // Ignore cancellations silently
+      if (msg.contains('sign_in_canceled') || msg.contains('PlatformException(sign_in_cancelled')) {
+        return;
+      }
+      state = state.copyWith(
+        errorMessage: 'Google Sign-In failed. Please try again.',
+      );
     }
   }
 
