@@ -15,10 +15,10 @@ void main() async {
           'https://ea33fb2e0f879ab2fdd3bf7b673e1e72@o4509442671968256.ingest.de.sentry.io/4509442684813392';
 
       // Enable automatic performance monitoring
-      options.tracesSampleRate = 1.0;
+      options.tracesSampleRate = 0.1;
 
-      // Profile 10% of transactions for performance insights
-      options.profilesSampleRate = 0.1;
+      // Profile 5% of transactions for performance insights
+      options.profilesSampleRate = 0.05;
 
       // Don't attach screenshots (privacy-safe for university platform)
       options.attachScreenshot = false;

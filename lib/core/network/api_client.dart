@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart' as dio;
-import 'package:dio/dio.dart' show Dio, DioException, BaseOptions, InterceptorsWrapper, RequestOptions, Response;
+import 'package:dio/dio.dart' show Dio, DioException, BaseOptions, InterceptorsWrapper, Response;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
