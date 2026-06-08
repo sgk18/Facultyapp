@@ -46,7 +46,7 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // 5. Render a styled success HTML page
+    // 5. Render a styled success HTML page that deep-links back to the app
     const successHtml = `
       <!DOCTYPE html>
       <html lang="en">
@@ -120,6 +120,11 @@ export async function GET(req: NextRequest) {
             transform: translateY(-1px);
             box-shadow: 0 6px 16px rgba(1, 71, 173, 0.25);
           }
+          .status {
+            font-size: 0.85rem;
+            color: #9CA3AF;
+            margin-top: 16px;
+          }
         </style>
       </head>
       <body>
@@ -127,8 +132,17 @@ export async function GET(req: NextRequest) {
           <div class="success-icon">✓</div>
           <h1>Calendar Linked Successfully!</h1>
           <p>Your Google account has been connected to the CHRIST Faculty Platform. Deadlines and reminders can now be synchronized automatically with your Google Calendar.</p>
-          <a href="#" class="btn" onclick="window.close(); return false;">Close Window</a>
+          <a href="facultyapp://google/callback/success" class="btn" id="returnBtn">Return to App</a>
+          <p class="status" id="statusText">Redirecting back to the app...</p>
         </div>
+        <script>
+          // Auto-redirect to app via deep link (closes Chrome Custom Tab on Android)
+          function redirectToApp() {
+            window.location.href = 'facultyapp://google/callback/success';
+          }
+          // Auto-redirect after 1.5s
+          setTimeout(redirectToApp, 1500);
+        </script>
       </body>
       </html>
     `;

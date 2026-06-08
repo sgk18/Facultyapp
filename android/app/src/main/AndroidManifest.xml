@@ -48,6 +48,17 @@
                     android:host="login-callback"/>
             </intent-filter>
 
+            <!-- Deep link for Google Calendar connect callback: facultyapp://google/callback/success -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data
+                    android:scheme="facultyapp"
+                    android:host="google"
+                    android:pathPrefix="/callback"/>
+            </intent-filter>
+
             <!-- HTTPS deep links for Supabase redirect fallback -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>

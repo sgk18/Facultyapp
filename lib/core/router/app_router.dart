@@ -14,6 +14,7 @@ import '../../features/navigation/presentation/main_scaffold.dart';
 import '../../features/splash/presentation/splash_screen.dart';
 
 import '../../features/splash/presentation/splash_controller.dart';
+import '../../features/profile/presentation/google_sync_provider.dart';
 import 'router_guard.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -46,6 +47,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: listenable,
     errorBuilder: (context, state) {
       final uri = state.uri;
+
+      // Google auth callback → return to app deep link
+      if (uri.scheme == 'facultyapp' && uri.host == 'google' && uri.path.startsWith('/callback')) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          // Refresh sync state so profile shows "Connected"
+          ref.invalidate(googleSyncProvider);
+          context.go('/profile');
+        });
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      // Supabase auth callback
       if ((uri.scheme == 'facultyapp' && uri.host == 'auth' && uri.path == '/callback') ||
           (uri.scheme == 'facultyapp' && uri.host == 'login-callback')) {
         final newPath = Uri(
