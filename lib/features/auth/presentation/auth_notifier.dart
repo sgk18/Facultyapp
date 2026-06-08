@@ -187,7 +187,11 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
   }
 
   // Native Google Sign-In — avoids browser redirect_uri entirely
+  // serverClientId = web client ID (used by Supabase to verify the ID token)
+  // clientId = Android client ID (registered with SHA-1 in Google Console)
   static final _googleSignIn = GoogleSignIn(
+    clientId:
+        '685264346083-lp447sjssdd69cd81sror5m5kqnphhni.apps.googleusercontent.com',
     serverClientId:
         '685264346083-tpmshfucdieg0ked3rg9meopn5l2ijo3.apps.googleusercontent.com',
   );
