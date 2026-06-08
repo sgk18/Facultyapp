@@ -10,13 +10,16 @@ import '../domain/user_model.dart';
 import '../domain/auth_state.dart';
 import '../../splash/presentation/splash_controller.dart';
 
+/// Sentinel used to distinguish "not provided" from an explicit `null` in copyWith.
+const _absent = Object();
+
 class AuthNotifierState {
   final bool isInitializing;
   final UserModel? user;
   final String? token;
   final String? errorMessage;
 
-  AuthNotifierState({
+  const AuthNotifierState({
     this.isInitializing = true,
     this.user,
     this.token,
@@ -40,17 +43,22 @@ class AuthNotifierState {
     return AppAuthState.authenticated;
   }
 
+  /// Supports explicit null-clearing via sentinel:
+  ///   `state.copyWith(user: null)` → clears user to null
+  ///   `state.copyWith()`          → keeps existing user
   AuthNotifierState copyWith({
     bool? isInitializing,
-    UserModel? user,
-    String? token,
-    String? errorMessage,
+    Object? user = _absent,
+    Object? token = _absent,
+    Object? errorMessage = _absent,
   }) {
     return AuthNotifierState(
       isInitializing: isInitializing ?? this.isInitializing,
-      user: user ?? this.user,
-      token: token ?? this.token,
-      errorMessage: errorMessage ?? this.errorMessage,
+      user: identical(user, _absent) ? this.user : user as UserModel?,
+      token: identical(token, _absent) ? this.token : token as String?,
+      errorMessage: identical(errorMessage, _absent)
+          ? this.errorMessage
+          : errorMessage as String?,
     );
   }
 }
@@ -125,21 +133,57 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
       );
       return true;
     } on DioException catch (e) {
-      final message = e.response?.data['error'] ?? 'Access restricted. Authentication failed.';
-      state = state.copyWith(
-        errorMessage: message is List ? message.first : message.toString(),
-      );
+      final statusCode = e.response?.statusCode;
+
+      // 401 → try a silent token refresh once before giving up
+      if (statusCode == 401) {
+        final refreshed = await _tryRefreshToken();
+        if (refreshed != null) {
+          return _onboardToken(refreshed);
+        }
+      }
+
+      final rawMessage = e.response?.data['error'];
+      final message = rawMessage is List
+          ? rawMessage.first as String
+          : (rawMessage?.toString() ?? 'Access restricted. Authentication failed.');
+
+      // Clear stale credentials alongside the error message
       await secureStorage.delete(key: AppConstants.tokenKey);
       await secureStorage.delete(key: AppConstants.userKey);
       await Supabase.instance.client.auth.signOut();
+      state = AuthNotifierState(
+        isInitializing: false,
+        errorMessage: message,
+      );
       return false;
     } catch (e) {
-      state = state.copyWith(errorMessage: 'An unexpected authentication error occurred.');
       await secureStorage.delete(key: AppConstants.tokenKey);
       await secureStorage.delete(key: AppConstants.userKey);
       await Supabase.instance.client.auth.signOut();
+      state = AuthNotifierState(
+        isInitializing: false,
+        errorMessage: 'An unexpected authentication error occurred.',
+      );
       return false;
     }
+  }
+
+  /// Attempts a silent Supabase session refresh.
+  /// Returns the new access token on success, or null if refresh failed.
+  Future<String?> _tryRefreshToken() async {
+    try {
+      final response = await Supabase.instance.client.auth.refreshSession();
+      final newToken = response.session?.accessToken;
+      if (newToken != null) {
+        final secureStorage = _ref.read(secureStorageProvider);
+        await secureStorage.write(key: AppConstants.tokenKey, value: newToken);
+        return newToken;
+      }
+    } catch (_) {
+      // Refresh failed — fall through and let the caller handle logout
+    }
+    return null;
   }
 
   Future<void> signInWithGoogle() async {
