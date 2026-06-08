@@ -11,7 +11,7 @@ final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
 });
 
 final dioProvider = Provider<Dio>((ref) {
-  final dio = Dio(
+  final dioClient = Dio(
     BaseOptions(
       baseUrl: AppConstants.baseUrl,
       connectTimeout: const Duration(seconds: 10),
@@ -22,7 +22,7 @@ final dioProvider = Provider<Dio>((ref) {
 
   final secureStorage = ref.watch(secureStorageProvider);
 
-  dio.interceptors.add(
+  dioClient.interceptors.add(
     InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await secureStorage.read(key: AppConstants.tokenKey);
@@ -56,7 +56,7 @@ final dioProvider = Provider<Dio>((ref) {
               options.headers['Authorization'] = 'Bearer $newToken';
               options.extra['_retried'] = true;
 
-              final retryResponse = await dio.fetch(options);
+              final retryResponse = await dioClient.fetch(options);
               return handler.resolve(retryResponse);
             }
           } catch (_) {
@@ -71,7 +71,7 @@ final dioProvider = Provider<Dio>((ref) {
     ),
   );
 
-  return dio;
+  return dioClient;
 });
 
 class ApiClient {
