@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { prisma } from './prisma';
 import { Role } from '@prisma/client';
 import { supabase } from './supabase';
+import jwt from 'jsonwebtoken';
 
 export interface AuthenticatedUser {
   id: string;
@@ -36,7 +37,7 @@ function cleanExpiredCache() {
 /**
  * Verifies the authentication state of an incoming request.
  * Resolves to the authenticated user's database profile, or null if invalid.
- * Uses Supabase JWT verification as the sole source of truth.
+ * Uses local JWT decoding/verification with fallback to Supabase Auth API.
  */
 export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | null> {
   const authHeader = req.headers.get('Authorization');
@@ -59,6 +60,47 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
   cleanExpiredCache();
 
   try {
+    // 1. Perform lightweight local checks on token structure/expiration
+    const decoded = jwt.decode(token) as any;
+    if (decoded && decoded.exp) {
+      const isExpired = decoded.exp * 1000 < now;
+      if (isExpired) {
+        // Expired token, reject immediately without database or Supabase API overhead
+        tokenCache.set(token, { user: null, expiresAt: now + NEGATIVE_CACHE_TTL_MS });
+        return null;
+      }
+    }
+
+    // 2. Attempt local signature verification if JWT_SECRET is configured
+    const jwtSecret = process.env.JWT_SECRET;
+    if (jwtSecret && decoded) {
+      try {
+        const verified = jwt.verify(token, jwtSecret) as any;
+        if (verified && verified.sub) {
+          const dbUser = await prisma.user.findUnique({
+            where: { supabaseUserId: verified.sub },
+          });
+
+          if (dbUser) {
+            const user: AuthenticatedUser = {
+              id: dbUser.id,
+              email: dbUser.email,
+              fullName: dbUser.fullName,
+              role: dbUser.role,
+              departmentId: dbUser.departmentId,
+            };
+            // Cache successful verification
+            tokenCache.set(token, { user, expiresAt: now + CACHE_TTL_MS });
+            return user;
+          }
+        }
+      } catch (verifyError) {
+        // Log locally but fall through to Supabase API fallback in case of secret mismatch
+        console.warn('Local JWT signature verification failed, trying Supabase Auth fallback:', verifyError);
+      }
+    }
+
+    // 3. Fallback to Supabase Auth network verification
     const { data, error } = await supabase.auth.getUser(token);
     if (!error && data.user) {
       const dbUser = await prisma.user.findUnique({
@@ -78,6 +120,7 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
         return user;
       }
     }
+
     // Cache failure briefly to mitigate spam
     tokenCache.set(token, { user: null, expiresAt: now + NEGATIVE_CACHE_TTL_MS });
   } catch (error) {
@@ -86,3 +129,4 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
 
   return null;
 }
+

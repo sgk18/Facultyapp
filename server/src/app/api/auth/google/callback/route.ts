@@ -15,8 +15,12 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    // Dynamically resolve redirect URI to match the exact URI used to get the authorization code
+    const reqUrl = new URL(req.url);
+    const redirectUri = `${reqUrl.origin}${reqUrl.pathname}`;
+
     // 1. Exchange OAuth code for access and refresh tokens
-    const tokens = await GoogleClient.exchangeCodeForTokens(code);
+    const tokens = await GoogleClient.exchangeCodeForTokens(code, redirectUri);
 
     // 2. Fetch the user's Google profile information
     const profile = await GoogleClient.getUserProfile(tokens.accessToken);

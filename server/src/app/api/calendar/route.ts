@@ -64,10 +64,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
-  // Mock Google Calendar sync trigger
+  // Sync new event to Google Calendar
   const { SyncService } = require('@/services/sync.service');
-  SyncService.syncCalendarForUser(user.id).catch((err: any) => {
-    console.error('Failed to sync new event to Google Calendar:', err);
+  SyncService.pushDeadlineToGoogleCalendar(event.id).catch((err: any) => {
+    console.error('Failed to push new event to Google Calendar:', err);
   });
 
   const mappedEvent = {
@@ -118,6 +118,12 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     data: updateData,
   });
 
+  // Sync updated event to Google Calendar
+  const { SyncService } = require('@/services/sync.service');
+  SyncService.pushDeadlineToGoogleCalendar(updated.id).catch((err: any) => {
+    console.error('Failed to push updated event to Google Calendar:', err);
+  });
+
   const mappedEvent = {
     id: updated.id,
     userId: updated.ownerId,
@@ -155,6 +161,13 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
 
   if (event.ownerId !== user.id) {
     throw new ForbiddenError('You do not own this calendar event');
+  }
+
+  if (event.googleEventId) {
+    const { SyncService } = require('@/services/sync.service');
+    SyncService.deleteDeadlineFromGoogleCalendar(user.id, event.googleEventId).catch((err: any) => {
+      console.error('Failed to delete calendar event for deleted deadline:', err);
+    });
   }
 
   await prisma.deadline.delete({

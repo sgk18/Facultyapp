@@ -9,6 +9,10 @@ export async function GET(req: NextRequest) {
     return new NextResponse('Missing userId query parameter', { status: 400 });
   }
 
-  const authUrl = GoogleClient.getAuthUrl(userId);
+  // Dynamically resolve redirect URI to match the environment (localhost vs production)
+  const reqUrl = new URL(req.url);
+  const redirectUri = `${reqUrl.origin}/api/auth/google/callback`;
+
+  const authUrl = GoogleClient.getAuthUrl(userId, redirectUri);
   return NextResponse.redirect(authUrl);
 }

@@ -24,7 +24,7 @@ export class GoogleClient {
   /**
    * Generates the Google OAuth authorization URL.
    */
-  static getAuthUrl(state?: string): string {
+  static getAuthUrl(state?: string, redirectUri?: string): string {
     const scopes = [
       'https://www.googleapis.com/auth/userinfo.profile',
       'https://www.googleapis.com/auth/userinfo.email',
@@ -34,7 +34,7 @@ export class GoogleClient {
 
     const params = new URLSearchParams({
       client_id: GOOGLE_CLIENT_ID,
-      redirect_uri: GOOGLE_REDIRECT_URI,
+      redirect_uri: redirectUri || GOOGLE_REDIRECT_URI,
       response_type: 'code',
       scope: scopes.join(' '),
       access_type: 'offline',
@@ -51,7 +51,7 @@ export class GoogleClient {
   /**
    * Exchanges authorization code for access and refresh tokens.
    */
-  static async exchangeCodeForTokens(code: string): Promise<GoogleTokens> {
+  static async exchangeCodeForTokens(code: string, redirectUri?: string): Promise<GoogleTokens> {
     const res = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -59,7 +59,7 @@ export class GoogleClient {
         code,
         client_id: GOOGLE_CLIENT_ID,
         client_secret: GOOGLE_CLIENT_SECRET,
-        redirect_uri: GOOGLE_REDIRECT_URI,
+        redirect_uri: redirectUri || GOOGLE_REDIRECT_URI,
         grant_type: 'authorization_code',
       }),
     });
