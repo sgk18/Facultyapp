@@ -1,7 +1,6 @@
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../domain/splash_state.dart';
 import '../application/session_loader.dart';
-import '../application/auth_check_service.dart';
 import '../../auth/presentation/auth_notifier.dart';
 
 final splashFinishedProvider = StateProvider<bool>((ref) => false);

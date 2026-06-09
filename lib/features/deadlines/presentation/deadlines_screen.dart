@@ -204,7 +204,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                       ),
                       Switch(
                         value: _showCompleted,
-                        activeColor: AppTheme.primary,
+                        activeThumbColor: AppTheme.primary,
                         activeTrackColor: AppTheme.primary.withValues(alpha: 0.3),
                         inactiveThumbColor: Colors.white,
                         inactiveTrackColor: Colors.grey.shade300,
@@ -556,7 +556,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: Colors.blue.shade50),
                           ),
-                          child: Icon(Icons.edit_outlined, color: AppTheme.primary, size: 18),
+                          child: const Icon(Icons.edit_outlined, color: AppTheme.primary, size: 18),
                         ),
                       ),
                     ],

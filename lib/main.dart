@@ -20,6 +20,7 @@ void main() async {
       options.tracesSampleRate = 0.1;
 
       // Profile 5% of transactions for performance insights
+      // ignore: experimental_member_use
       options.profilesSampleRate = 0.05;
 
       // Don't attach screenshots (privacy-safe for university platform)
@@ -40,7 +41,7 @@ void main() async {
 
       await Supabase.initialize(
         url: AppConstants.supabaseUrl,
-        anonKey: AppConstants.supabaseAnonKey,
+        publishableKey: AppConstants.supabaseAnonKey,
       );
       await LocalNotificationService.initialize();
 

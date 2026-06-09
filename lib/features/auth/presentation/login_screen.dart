@@ -4,7 +4,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/theme/app_theme.dart';
-import '../../../core/widgets/glass_card.dart';
 import 'auth_notifier.dart';
 
 class LoginScreen extends HookConsumerWidget {
@@ -38,7 +37,6 @@ class LoginScreen extends HookConsumerWidget {
 
     final mediaQuery = MediaQuery.of(context);
     final screenHeight = mediaQuery.size.height;
-    final screenWidth = mediaQuery.size.width;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F7FB),
@@ -67,8 +65,8 @@ class LoginScreen extends HookConsumerWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            const Color(0xFF0F3070).withOpacity(0.85),
-                            const Color(0xFF1E60D5).withOpacity(0.4),
+                            const Color(0xFF0F3070).withValues(alpha: 0.85),
+                            const Color(0xFF1E60D5).withValues(alpha: 0.4),
                           ],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
@@ -129,7 +127,7 @@ class LoginScreen extends HookConsumerWidget {
                           Text(
                             'Sign in to access your Christ University Faculty Portal',
                             style: GoogleFonts.outfit(
-                              color: Colors.white.withOpacity(0.85),
+                              color: Colors.white.withValues(alpha: 0.85),
                               fontSize: 15,
                               fontWeight: FontWeight.w400,
                             ),
@@ -148,7 +146,7 @@ class LoginScreen extends HookConsumerWidget {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 24,
                             offset: const Offset(0, 10),
                           ),
@@ -246,7 +244,7 @@ class LoginScreen extends HookConsumerWidget {
                               borderRadius: BorderRadius.circular(14),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xFF1E60D5).withOpacity(0.25),
+                                  color: const Color(0xFF1E60D5).withValues(alpha: 0.25),
                                   blurRadius: 12,
                                   offset: const Offset(0, 4),
                                 ),
@@ -397,7 +395,7 @@ class LoginScreen extends HookConsumerWidget {
               width: 3.5,
               height: 3.5,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.35),
+                color: Colors.white.withValues(alpha: 0.35),
                 shape: BoxShape.circle,
               ),
             ),

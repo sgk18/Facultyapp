@@ -2,9 +2,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '../../auth/domain/user_model.dart';
 
 class AuthCheckService {
-  final Ref _ref;
-
-  AuthCheckService(this._ref);
+  AuthCheckService();
 
   bool checkOnboardingComplete(UserModel user) {
     // If departmentId is null or empty, onboarding is considered incomplete
@@ -13,5 +11,5 @@ class AuthCheckService {
 }
 
 final authCheckServiceProvider = Provider<AuthCheckService>((ref) {
-  return AuthCheckService(ref);
+  return AuthCheckService();
 });

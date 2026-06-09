@@ -413,7 +413,7 @@ class ProfileScreen extends ConsumerWidget {
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.blue.shade50),
               ),
-              child: Icon(Icons.copy, color: AppTheme.primary, size: 18),
+              child: const Icon(Icons.copy, color: AppTheme.primary, size: 18),
             ),
           ),
         ],
@@ -586,7 +586,7 @@ class ProfileScreen extends ConsumerWidget {
                       subtitle: const Text('Toggle all multi-channel alert delivery systems', style: TextStyle(fontSize: 12)),
                       contentPadding: EdgeInsets.zero,
                       value: currentUser.notificationEnabled,
-                      activeColor: AppTheme.primary,
+                      activeThumbColor: AppTheme.primary,
                       onChanged: (val) async {
                         await authNotifier.updateUserPreferences(notificationEnabled: val);
                         setModalState(() {});
@@ -601,7 +601,7 @@ class ProfileScreen extends ConsumerWidget {
                         subtitle: const Text('Receive custom formatted deadline reminder emails', style: TextStyle(fontSize: 12)),
                         contentPadding: EdgeInsets.zero,
                         value: currentUser.emailNotificationsEnabled,
-                        activeColor: AppTheme.primary,
+                        activeThumbColor: AppTheme.primary,
                         onChanged: (val) async {
                           await authNotifier.updateUserPreferences(emailNotificationsEnabled: val);
                           setModalState(() {});
@@ -612,7 +612,7 @@ class ProfileScreen extends ConsumerWidget {
                         subtitle: const Text('Receive native OneSignal push notification alerts', style: TextStyle(fontSize: 12)),
                         contentPadding: EdgeInsets.zero,
                         value: currentUser.pushNotificationsEnabled,
-                        activeColor: AppTheme.primary,
+                        activeThumbColor: AppTheme.primary,
                         onChanged: (val) async {
                           await authNotifier.updateUserPreferences(pushNotificationsEnabled: val);
                           setModalState(() {});
@@ -623,7 +623,7 @@ class ProfileScreen extends ConsumerWidget {
                         subtitle: const Text('Receive alert records inside the app feed', style: TextStyle(fontSize: 12)),
                         contentPadding: EdgeInsets.zero,
                         value: currentUser.inAppNotificationsEnabled,
-                        activeColor: AppTheme.primary,
+                        activeThumbColor: AppTheme.primary,
                         onChanged: (val) async {
                           await authNotifier.updateUserPreferences(inAppNotificationsEnabled: val);
                           setModalState(() {});
@@ -635,8 +635,8 @@ class ProfileScreen extends ConsumerWidget {
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlue),
                       ),
                       const SizedBox(height: 8),
-                      DropdownButtonFormField<String>(
-                        value: currentUser.reminderFrequency,
+                       DropdownButtonFormField<String>(
+                        initialValue: currentUser.reminderFrequency,
                         decoration: InputDecoration(
                           contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),

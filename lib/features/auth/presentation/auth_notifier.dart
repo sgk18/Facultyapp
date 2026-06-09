@@ -66,7 +66,7 @@ class AuthNotifierState {
 class AuthNotifier extends StateNotifier<AuthNotifierState> {
   final Ref _ref;
 
-  AuthNotifier(this._ref) : super(AuthNotifierState()) {
+  AuthNotifier(this._ref) : super(const AuthNotifierState()) {
     _loadSession();
     _listenToAuthChanges();
   }
@@ -85,10 +85,10 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
           user: UserModel.fromJson(userData),
         );
       } else {
-        state = AuthNotifierState(isInitializing: false);
+        state = const AuthNotifierState(isInitializing: false);
       }
     } catch (e) {
-      state = AuthNotifierState(isInitializing: false);
+      state = const AuthNotifierState(isInitializing: false);
     }
   }
 
@@ -161,7 +161,7 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
       await secureStorage.delete(key: AppConstants.tokenKey);
       await secureStorage.delete(key: AppConstants.userKey);
       await Supabase.instance.client.auth.signOut();
-      state = AuthNotifierState(
+      state = const AuthNotifierState(
         isInitializing: false,
         errorMessage: 'An unexpected authentication error occurred.',
       );
@@ -273,7 +273,7 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
       await Supabase.instance.client.auth.signOut();
     } catch (_) {}
 
-    state = AuthNotifierState(isInitializing: false);
+    state = const AuthNotifierState(isInitializing: false);
   }
 }
 
