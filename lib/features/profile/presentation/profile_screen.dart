@@ -165,6 +165,79 @@ class ProfileScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 24),
 
+                  // Notification Preferences Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.blue.shade100.withValues(alpha: 0.5)),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+                            ],
+                          ),
+                          child: const Icon(Icons.notifications_active_outlined, color: Colors.orange, size: 30),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Notification Preferences',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.darkBlue,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Configure multi-channel alerts and reminder schedule',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => _showNotificationsBottomSheet(context, ref, user),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: AppTheme.primary,
+                            elevation: 1,
+                            shadowColor: Colors.black12,
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(color: Colors.grey.shade200),
+                            ),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text('Manage', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              SizedBox(width: 2),
+                              Icon(Icons.chevron_right, size: 14),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   // Google Calendar Sync Card
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -455,6 +528,134 @@ class ProfileScreen extends ConsumerWidget {
                     ),
                   ),
                 ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showNotificationsBottomSheet(
+    BuildContext context,
+    WidgetRef ref,
+    dynamic user,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final authNotifier = ref.read(authNotifierProvider.notifier);
+            final authState = ref.watch(authNotifierProvider);
+            final currentUser = authState.user;
+
+            if (currentUser == null) return const SizedBox();
+
+            return Container(
+              padding: const EdgeInsets.all(24),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Notification Preferences',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.darkBlue,
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      title: const Text('Global Notifications', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                      subtitle: const Text('Toggle all multi-channel alert delivery systems', style: TextStyle(fontSize: 12)),
+                      contentPadding: EdgeInsets.zero,
+                      value: currentUser.notificationEnabled,
+                      activeColor: AppTheme.primary,
+                      onChanged: (val) async {
+                        await authNotifier.updateUserPreferences(notificationEnabled: val);
+                        setModalState(() {});
+                      },
+                    ),
+                    if (currentUser.notificationEnabled) ...[
+                      const SizedBox(height: 8),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      SwitchListTile(
+                        title: const Text('Email Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Receive custom formatted deadline reminder emails', style: TextStyle(fontSize: 12)),
+                        contentPadding: EdgeInsets.zero,
+                        value: currentUser.emailNotificationsEnabled,
+                        activeColor: AppTheme.primary,
+                        onChanged: (val) async {
+                          await authNotifier.updateUserPreferences(emailNotificationsEnabled: val);
+                          setModalState(() {});
+                        },
+                      ),
+                      SwitchListTile(
+                        title: const Text('Push Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Receive native OneSignal push notification alerts', style: TextStyle(fontSize: 12)),
+                        contentPadding: EdgeInsets.zero,
+                        value: currentUser.pushNotificationsEnabled,
+                        activeColor: AppTheme.primary,
+                        onChanged: (val) async {
+                          await authNotifier.updateUserPreferences(pushNotificationsEnabled: val);
+                          setModalState(() {});
+                        },
+                      ),
+                      SwitchListTile(
+                        title: const Text('In-App Alerts', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+                        subtitle: const Text('Receive alert records inside the app feed', style: TextStyle(fontSize: 12)),
+                        contentPadding: EdgeInsets.zero,
+                        value: currentUser.inAppNotificationsEnabled,
+                        activeColor: AppTheme.primary,
+                        onChanged: (val) async {
+                          await authNotifier.updateUserPreferences(inAppNotificationsEnabled: val);
+                          setModalState(() {});
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Reminder Frequency',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.darkBlue),
+                      ),
+                      const SizedBox(height: 8),
+                      DropdownButtonFormField<String>(
+                        value: currentUser.reminderFrequency,
+                        decoration: InputDecoration(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        items: const [
+                          DropdownMenuItem(value: 'ALL', child: Text('All Reminders (7 Days to Due Date)')),
+                          DropdownMenuItem(value: 'URGENT_ONLY', child: Text('Urgent Only (3 Days to Due Date)')),
+                          DropdownMenuItem(value: 'DUE_DATE_ONLY', child: Text('Due Date Only')),
+                        ],
+                        onChanged: (val) async {
+                          if (val != null) {
+                            await authNotifier.updateUserPreferences(reminderFrequency: val);
+                            setModalState(() {});
+                          }
+                        },
+                      ),
+                    ],
+                  ],
+                ),
               ),
             );
           },
