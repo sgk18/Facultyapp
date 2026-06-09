@@ -552,16 +552,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    runSpacing: 4,
                     children: [
-                      const Icon(Icons.access_time_filled, size: 14, color: Colors.black38),
-                      const SizedBox(width: 4),
-                      Text(
-                        time,
-                        style: const TextStyle(color: Colors.black45, fontSize: 12, fontWeight: FontWeight.w500),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.access_time_filled, size: 14, color: Colors.black38),
+                          const SizedBox(width: 4),
+                          Text(
+                            time,
+                            style: const TextStyle(color: Colors.black45, fontSize: 12, fontWeight: FontWeight.w500),
+                          ),
+                        ],
                       ),
-                      if (priorityBadgeText != null) ...[
-                        const SizedBox(width: 8),
+                      if (priorityBadgeText != null)
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
@@ -577,7 +584,6 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                             ),
                           ),
                         ),
-                      ],
                     ],
                   ),
                 ],
