@@ -146,6 +146,9 @@ export class DeadlineService {
       relatedDeadlineId: deadline.id,
     });
 
+    // 4. Automatically schedule reminder notifications
+    await DeadlineService.scheduleNotificationsForDeadline(deadline.id, input.reminderSettings);
+
     return deadline;
   }
 
@@ -295,6 +298,18 @@ export class DeadlineService {
       relatedDeadlineId: updatedDeadline.id,
     });
 
+    // 5. Cancel or recalculate scheduled notifications
+    if (isCancelled || isCompleted) {
+      await prisma.scheduledNotification.deleteMany({
+        where: {
+          deadlineId: id,
+          status: 'pending',
+        },
+      });
+    } else if (input.dueDate !== undefined || input.reminderSettings !== undefined || input.departmentId !== undefined) {
+      await DeadlineService.scheduleNotificationsForDeadline(updatedDeadline.id, input.reminderSettings || []);
+    }
+
     return updatedDeadline;
   }
 
@@ -326,5 +341,97 @@ export class DeadlineService {
     });
 
     return true;
+  }
+
+  /**
+   * Automatically generates pending scheduled reminders for all channels (email, push, in_app)
+   */
+  static async scheduleNotificationsForDeadline(deadlineId: string, reminderSettings?: string[]) {
+    try {
+      const deadline = await prisma.deadline.findUnique({
+        where: { id: deadlineId },
+      });
+      if (!deadline) return;
+
+      // Clean existing pending reminders first
+      await prisma.scheduledNotification.deleteMany({
+        where: {
+          deadlineId,
+          status: 'pending',
+        },
+      });
+
+      // Find all users in the target department
+      const users = await prisma.user.findMany({
+        where: { departmentId: deadline.departmentId },
+      });
+
+      const now = new Date();
+      const dueDate = new Date(deadline.dueDate);
+
+      const scheduledOffsets = [
+        { days: 7, label: '7_DAYS_BEFORE', ms: 7 * 24 * 60 * 60 * 1000 },
+        { days: 6, label: '6_DAYS_BEFORE', ms: 6 * 24 * 60 * 60 * 1000 },
+        { days: 5, label: '5_DAYS_BEFORE', ms: 5 * 24 * 60 * 60 * 1000 },
+        { days: 4, label: '4_DAYS_BEFORE', ms: 4 * 24 * 60 * 60 * 1000 },
+        { days: 3, label: '3_DAYS_BEFORE', ms: 3 * 24 * 60 * 60 * 1000 },
+        { days: 2, label: '2_DAYS_BEFORE', ms: 2 * 24 * 60 * 60 * 1000 },
+        { days: 1, label: '1_DAY_BEFORE', ms: 1 * 24 * 60 * 60 * 1000 },
+        { days: 0, label: 'DUE_DATE', ms: 0 },
+        // Overdue offset (24 hours after due date)
+        { days: -1, label: 'OVERDUE', ms: -24 * 60 * 60 * 1000 },
+      ];
+
+      const settings = reminderSettings || [];
+      if (settings.includes('12_HOURS')) {
+        scheduledOffsets.push({ days: 0.5, label: '12_HOURS_BEFORE', ms: 12 * 60 * 60 * 1000 });
+      }
+      if (settings.includes('6_HOURS')) {
+        scheduledOffsets.push({ days: 0.25, label: '6_HOURS_BEFORE', ms: 6 * 60 * 60 * 1000 });
+      }
+      if (settings.includes('1_HOUR')) {
+        scheduledOffsets.push({ days: 1/24, label: '1_HOUR_BEFORE', ms: 1 * 60 * 60 * 1000 });
+      }
+
+      const rows: any[] = [];
+      for (const offset of scheduledOffsets) {
+        const scheduledFor = new Date(dueDate.getTime() - offset.ms);
+        // Only schedule for future times
+        if (scheduledFor > now) {
+          for (const user of users) {
+            rows.push({
+              userId: user.id,
+              deadlineId: deadline.id,
+              channel: 'email',
+              scheduledFor,
+              status: 'pending',
+            });
+            rows.push({
+              userId: user.id,
+              deadlineId: deadline.id,
+              channel: 'push',
+              scheduledFor,
+              status: 'pending',
+            });
+            rows.push({
+              userId: user.id,
+              deadlineId: deadline.id,
+              channel: 'in_app',
+              scheduledFor,
+              status: 'pending',
+            });
+          }
+        }
+      }
+
+      if (rows.length > 0) {
+        await prisma.scheduledNotification.createMany({
+          data: rows,
+        });
+        console.log(`Successfully scheduled ${rows.length} reminder notifications for deadline: "${deadline.title}"`);
+      }
+    } catch (error) {
+      console.error('Failed to schedule notifications for deadline:', error);
+    }
   }
 }

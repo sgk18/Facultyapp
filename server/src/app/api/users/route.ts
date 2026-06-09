@@ -9,6 +9,11 @@ const updateProfileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters long').optional(),
   departmentId: z.string().uuid().optional(),
   role: z.enum(['ADMIN', 'HOD', 'FACULTY']).optional(),
+  notificationEnabled: z.boolean().optional(),
+  emailNotificationsEnabled: z.boolean().optional(),
+  pushNotificationsEnabled: z.boolean().optional(),
+  inAppNotificationsEnabled: z.boolean().optional(),
+  reminderFrequency: z.string().optional(),
 });
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
@@ -30,7 +35,17 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     );
   }
   
-  const { userId, fullName, departmentId, role } = result.data;
+  const {
+    userId,
+    fullName,
+    departmentId,
+    role,
+    notificationEnabled,
+    emailNotificationsEnabled,
+    pushNotificationsEnabled,
+    inAppNotificationsEnabled,
+    reminderFrequency,
+  } = result.data;
   
   // Decide target user
   let targetUserId = activeUser.id;
@@ -52,6 +67,11 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     fullName,
     departmentId,
     role,
+    notificationEnabled,
+    emailNotificationsEnabled,
+    pushNotificationsEnabled,
+    inAppNotificationsEnabled,
+    reminderFrequency,
   });
   
   return sendSuccess(updatedUser, 'User profile updated successfully');

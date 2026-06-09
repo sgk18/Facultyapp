@@ -8,6 +8,11 @@ class UserModel {
   final String? avatarUrl;
   final String? supabaseUserId;
   final String? employeeCode;
+  final bool notificationEnabled;
+  final bool emailNotificationsEnabled;
+  final bool pushNotificationsEnabled;
+  final bool inAppNotificationsEnabled;
+  final String reminderFrequency;
 
   UserModel({
     required this.id,
@@ -19,6 +24,11 @@ class UserModel {
     this.avatarUrl,
     this.supabaseUserId,
     this.employeeCode,
+    this.notificationEnabled = true,
+    this.emailNotificationsEnabled = true,
+    this.pushNotificationsEnabled = true,
+    this.inAppNotificationsEnabled = true,
+    this.reminderFrequency = 'ALL',
   });
 
   /// Returns the first two characters of the full name for avatar initials.
@@ -51,6 +61,11 @@ class UserModel {
       avatarUrl: json['avatarUrl'] as String? ?? json['avatar_url'] as String?,
       supabaseUserId: json['supabaseUserId'] as String? ?? json['supabase_user_id'] as String?,
       employeeCode: employeeCode,
+      notificationEnabled: json['notificationEnabled'] as bool? ?? json['notification_enabled'] as bool? ?? true,
+      emailNotificationsEnabled: json['emailNotificationsEnabled'] as bool? ?? json['email_notifications_enabled'] as bool? ?? true,
+      pushNotificationsEnabled: json['pushNotificationsEnabled'] as bool? ?? json['push_notifications_enabled'] as bool? ?? true,
+      inAppNotificationsEnabled: json['inAppNotificationsEnabled'] as bool? ?? json['in_app_notifications_enabled'] as bool? ?? true,
+      reminderFrequency: json['reminderFrequency'] as String? ?? json['reminder_frequency'] as String? ?? 'ALL',
     );
   }
 
@@ -65,6 +80,11 @@ class UserModel {
       'avatarUrl': avatarUrl,
       'supabaseUserId': supabaseUserId,
       'employeeCode': employeeCode,
+      'notificationEnabled': notificationEnabled,
+      'emailNotificationsEnabled': emailNotificationsEnabled,
+      'pushNotificationsEnabled': pushNotificationsEnabled,
+      'inAppNotificationsEnabled': inAppNotificationsEnabled,
+      'reminderFrequency': reminderFrequency,
     };
   }
 }

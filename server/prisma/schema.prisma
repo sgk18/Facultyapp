@@ -53,12 +53,17 @@ model User {
   gmailSyncEnabled    Boolean        @default(false) @map("gmail_sync_enabled")
   calendarSyncEnabled Boolean        @default(false) @map("calendar_sync_enabled")
   notificationEnabled Boolean        @default(true) @map("notification_enabled")
+  emailNotificationsEnabled Boolean @default(true) @map("email_notifications_enabled")
+  pushNotificationsEnabled  Boolean @default(true) @map("push_notifications_enabled")
+  inAppNotificationsEnabled Boolean @default(true) @map("in_app_notifications_enabled")
+  reminderFrequency         String   @default("ALL")  @map("reminder_frequency")
   fcmToken            String?        @map("fcm_token")
   platform            String?        @map("platform")
   googleId            String?        @unique @map("google_id")
   googleAccessToken   String?        @map("google_access_token")
   googleRefreshToken  String?        @map("google_refresh_token")
   auditLogs           AuditLog[]
+  scheduledNotifications ScheduledNotification[]
 
   @@map("users")
 }
@@ -76,6 +81,7 @@ model Deadline {
   isCompleted     Boolean         @default(false) @map("is_completed")
   status          String          @default("ACTIVE")
   notifications   Notification[]
+  scheduledNotifications ScheduledNotification[]
   reminderEnabled Boolean         @default(false) @map("reminder_enabled")
   reminderTime    DateTime?       @map("reminder_time")
   repeatType      String?         @map("repeat_type")
@@ -111,4 +117,18 @@ model AuditLog {
   timestamp  DateTime @default(now()) @map("timestamp")
 
   @@map("audit_logs")
+}
+
+model ScheduledNotification {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deadlineId  String   @db.Uuid @map("deadline_id")
+  deadline    Deadline @relation(fields: [deadlineId], references: [id], onDelete: Cascade)
+  channel     String   // "email", "push", "in_app"
+  scheduledFor DateTime @map("scheduled_for")
+  status      String   @default("pending") // "pending", "sent", "failed"
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("scheduled_notifications")
 }

@@ -30,6 +30,11 @@ export class UserService {
       role?: Role;
       avatarUrl?: string | null;
       supabaseUserId?: string;
+      notificationEnabled?: boolean;
+      emailNotificationsEnabled?: boolean;
+      pushNotificationsEnabled?: boolean;
+      inAppNotificationsEnabled?: boolean;
+      reminderFrequency?: string;
     }
   ) {
     // Verify department exists if departmentId is being updated

@@ -233,6 +233,37 @@ class AuthNotifier extends StateNotifier<AuthNotifierState> {
     }
   }
 
+  Future<void> updateUserPreferences({
+    bool? notificationEnabled,
+    bool? emailNotificationsEnabled,
+    bool? pushNotificationsEnabled,
+    bool? inAppNotificationsEnabled,
+    String? reminderFrequency,
+  }) async {
+    if (state.user == null) return;
+    try {
+      final response = await _ref.read(apiClientProvider).patch(
+        '/users',
+        data: {
+          if (notificationEnabled != null) 'notificationEnabled': notificationEnabled,
+          if (emailNotificationsEnabled != null) 'emailNotificationsEnabled': emailNotificationsEnabled,
+          if (pushNotificationsEnabled != null) 'pushNotificationsEnabled': pushNotificationsEnabled,
+          if (inAppNotificationsEnabled != null) 'inAppNotificationsEnabled': inAppNotificationsEnabled,
+          if (reminderFrequency != null) 'reminderFrequency': reminderFrequency,
+        },
+      );
+      final updatedUserMap = response.data['data'] as Map<String, dynamic>;
+      final updatedUser = UserModel.fromJson(updatedUserMap);
+      
+      final secureStorage = _ref.read(secureStorageProvider);
+      await secureStorage.write(key: AppConstants.userKey, value: jsonEncode(updatedUserMap));
+      
+      state = state.copyWith(user: updatedUser);
+    } catch (e) {
+      state = state.copyWith(errorMessage: 'Failed to save preference settings. Please try again.');
+    }
+  }
+
   Future<void> logout() async {
     final secureStorage = _ref.read(secureStorageProvider);
     await secureStorage.delete(key: AppConstants.tokenKey);
