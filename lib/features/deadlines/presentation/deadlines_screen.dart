@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:dio/dio.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../auth/presentation/auth_notifier.dart';
@@ -32,14 +33,31 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
     final userDeptId = currentUser?.departmentId;
 
     return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFC),
       appBar: AppBar(
-        title: const Text(
-          'Academic Deadlines',
-          style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlue),
+        title: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Academic Deadlines',
+              style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.darkBlue),
+            ),
+            Text(
+              'Stay on top of your important tasks',
+              style: TextStyle(fontSize: 12, color: Colors.black45, fontWeight: FontWeight.normal),
+            ),
+          ],
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.filter_list, color: AppTheme.primary),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: Column(
         children: [
@@ -48,128 +66,156 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Column(
               children: [
-                // Search Field
-                TextField(
-                  onChanged: (val) {
-                    setState(() {
-                      _searchQuery = val;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search deadlines...',
-                    prefixIcon: const Icon(Icons.search, color: AppTheme.primary),
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade200),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.primary),
+                // 1. Search Bar Pill
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade200),
+                  ),
+                  child: TextField(
+                    onChanged: (val) {
+                      setState(() {
+                        _searchQuery = val;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search deadlines...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.black45),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
                     ),
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 
-                // Filters Row
+                // 2. Dropdown Filter Rows
                 Row(
                   children: [
-                    // Priority Filter
+                    // Priority Dropdown Pill
                     Expanded(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey.shade200),
                         ),
-                        child: DropdownButtonHideUnderline(
-                          child: DropdownButton<String>(
-                            value: _selectedPriority,
-                            isExpanded: true,
-                            items: const [
-                              DropdownMenuItem(value: 'ALL', child: Text('All Priorities')),
-                              DropdownMenuItem(value: 'HIGH', child: Text('High')),
-                              DropdownMenuItem(value: 'MEDIUM', child: Text('Medium')),
-                              DropdownMenuItem(value: 'LOW', child: Text('Low')),
-                            ],
-                            onChanged: (val) {
-                              setState(() {
-                                _selectedPriority = val ?? 'ALL';
-                              });
-                            },
-                          ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.flag_outlined, color: AppTheme.primary, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: DropdownButtonHideUnderline(
+                                child: DropdownButton<String>(
+                                  value: _selectedPriority,
+                                  isExpanded: true,
+                                  icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                                  style: const TextStyle(color: AppTheme.darkBlue, fontWeight: FontWeight.w500, fontSize: 13),
+                                  items: const [
+                                    DropdownMenuItem(value: 'ALL', child: Text('All Priorities')),
+                                    DropdownMenuItem(value: 'HIGH', child: Text('High')),
+                                    DropdownMenuItem(value: 'MEDIUM', child: Text('Medium')),
+                                    DropdownMenuItem(value: 'LOW', child: Text('Low')),
+                                  ],
+                                  onChanged: (val) {
+                                    setState(() {
+                                      _selectedPriority = val ?? 'ALL';
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                     
-                    // Department Filter (only active/visible if user is not Faculty)
-                    if (!isFaculty) ...[
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey.shade200),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: departmentsState.maybeWhen(
-                              data: (depts) {
-                                return DropdownButton<String>(
-                                  value: _selectedDepartmentId,
-                                  isExpanded: true,
-                                  items: [
-                                    const DropdownMenuItem(value: 'ALL', child: Text('All Depts')),
-                                    ...depts.map((d) => DropdownMenuItem(value: d.id, child: Text(d.code))),
-                                  ],
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _selectedDepartmentId = val ?? 'ALL';
-                                    });
+                    // Department Dropdown Pill (Visible if user is HOD/ADMIN, or fallback)
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.business_outlined, color: AppTheme.primary, size: 20),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: DropdownButtonHideUnderline(
+                                child: departmentsState.maybeWhen(
+                                  data: (depts) {
+                                    return DropdownButton<String>(
+                                      value: _selectedDepartmentId,
+                                      isExpanded: true,
+                                      icon: const Icon(Icons.keyboard_arrow_down, size: 18),
+                                      style: const TextStyle(color: AppTheme.darkBlue, fontWeight: FontWeight.w500, fontSize: 13),
+                                      items: [
+                                        const DropdownMenuItem(value: 'ALL', child: Text('All Departments')),
+                                        ...depts.map((d) => DropdownMenuItem(value: d.id, child: Text(d.code))),
+                                      ],
+                                      onChanged: (val) {
+                                        setState(() {
+                                          _selectedDepartmentId = val ?? 'ALL';
+                                        });
+                                      },
+                                    );
                                   },
-                                );
-                              },
-                              orElse: () => const Center(
-                                child: SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  orElse: () => const Center(
+                                    child: SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ],
                 ),
+                const SizedBox(height: 12),
                 
-                // Show completed Switch
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Show Completed & Cancelled',
-                      style: TextStyle(fontSize: 13, color: AppTheme.darkBlue, fontWeight: FontWeight.w500),
-                    ),
-                    Switch(
-                      value: _showCompleted,
-                      activeThumbColor: AppTheme.primary,
-                      onChanged: (val) {
-                        setState(() {
-                          _showCompleted = val;
-                        });
-                      },
-                    ),
-                  ],
+                // 3. Completed Switch Banner
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Show Completed & Cancelled',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.darkBlue,
+                        ),
+                      ),
+                      Switch(
+                        value: _showCompleted,
+                        activeColor: AppTheme.primary,
+                        activeTrackColor: AppTheme.primary.withValues(alpha: 0.3),
+                        inactiveThumbColor: Colors.white,
+                        inactiveTrackColor: Colors.grey.shade300,
+                        onChanged: (val) {
+                          setState(() {
+                            _showCompleted = val;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -179,7 +225,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
           Expanded(
             child: deadlinesState.when(
               data: (deadlines) {
-                // Apply filters
+                // Apply search/priority/department/completed filters
                 var filtered = deadlines.where((d) {
                   final matchesSearch = d.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
                       d.description.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -258,7 +304,6 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
   Widget _buildDeadlineCard(BuildContext context, Deadline deadline, bool canManage) {
     Color priorityColor;
     Color priorityBg;
-    
     switch (deadline.priority) {
       case 'HIGH':
         priorityColor = Colors.red.shade700;
@@ -273,7 +318,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
         priorityBg = Colors.green.shade50;
     }
 
-    final dateString = DateFormat('MMM dd, yyyy - hh:mm a').format(deadline.dueDate.toLocal());
+    final dateString = DateFormat('MMM dd, yyyy • hh:mm a').format(deadline.dueDate.toLocal());
     final isOverdue = deadline.dueDate.isBefore(DateTime.now()) && deadline.status == 'ACTIVE';
     final isCompleted = deadline.status == 'COMPLETED';
     final isCancelled = deadline.status == 'CANCELLED';
@@ -287,160 +332,257 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: Opacity(
-        opacity: isCancelled ? 0.6 : 1.0,
-        child: GlassCard(
-          backgroundColor: cardBgColor,
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Priority & Status Badges
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: priorityBg,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          deadline.priority,
-                          style: TextStyle(
-                            color: priorityColor,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      // Status Badge
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: isCancelled 
-                              ? Colors.grey.shade200 
-                              : (isCompleted ? Colors.green.shade100 : Colors.blue.shade50),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          deadline.status,
-                          style: TextStyle(
-                            color: isCancelled 
-                                ? Colors.grey.shade700 
-                                : (isCompleted ? Colors.green.shade800 : Colors.blue.shade800),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
+      child: GlassCard(
+        backgroundColor: cardBgColor,
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: Badges and warning details
+            Row(
+              children: [
+                // Priority Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: priorityBg,
+                    borderRadius: BorderRadius.circular(6),
                   ),
-                  
-                  // Due Date text
-                  Row(
-                    children: [
-                      if (isOverdue)
-                        const Padding(
-                          padding: EdgeInsets.only(right: 4),
-                          child: Icon(Icons.warning_amber_rounded, size: 14, color: AppTheme.error),
-                        ),
-                      Text(
-                        dateString,
-                        style: TextStyle(
-                          color: isOverdue ? AppTheme.error : Colors.black54,
-                          fontSize: 11,
-                          fontWeight: isOverdue ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              
-              // Title and Description
-              Text(
-                deadline.title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.darkBlue,
-                  decoration: isCompleted 
-                      ? TextDecoration.lineThrough 
-                      : (isCancelled ? TextDecoration.lineThrough : null),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                deadline.description,
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 13,
-                  height: 1.35,
-                ),
-              ),
-              const SizedBox(height: 10),
-              
-              // Info Row: Department, CreatedBy, Actions
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (deadline.departmentName != null)
-                          Text(
-                            'Dept: ${deadline.departmentName}',
-                            style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontWeight: FontWeight.w500),
-                          ),
-                        if (deadline.createdByFullName != null)
-                          Text(
-                            'By: ${deadline.createdByFullName}',
-                            style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
-                          ),
-                      ],
+                  child: Text(
+                    deadline.priority,
+                    style: TextStyle(
+                      color: priorityColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  
-                  // Actions Button or Completion Toggle
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                ),
+                const SizedBox(width: 6),
+                
+                // Status Badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: isCancelled 
+                        ? Colors.grey.shade200 
+                        : (isCompleted ? Colors.green.shade100 : Colors.blue.shade50),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    deadline.status,
+                    style: TextStyle(
+                      color: isCancelled 
+                          ? Colors.grey.shade700 
+                          : (isCompleted ? Colors.green.shade800 : Colors.blue.shade800),
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+
+                // Red Warning triangle & Date-time text
+                Icon(
+                  isOverdue ? Icons.warning_rounded : Icons.warning_amber_rounded,
+                  color: isOverdue ? Colors.red.shade700 : Colors.red.shade400,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    dateString,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: isOverdue ? Colors.red.shade700 : Colors.grey.shade600,
+                      fontSize: 11,
+                      fontWeight: isOverdue ? FontWeight.bold : FontWeight.w500,
+                    ),
+                  ),
+                ),
+
+                // Option Pop-up menu button
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert, size: 20, color: Colors.black45),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  onSelected: (val) {
+                    if (val == 'edit') {
+                      _showDeadlineModal(context, deadline);
+                    } else if (val == 'delete') {
+                      _showDeleteConfirm(context, deadline.id);
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    if (canManage && !isCancelled && !isCompleted)
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit_outlined, size: 16),
+                            SizedBox(width: 8),
+                            Text('Edit'),
+                          ],
+                        ),
+                      ),
+                    if (canManage)
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete_outline, color: Colors.red, size: 16),
+                            SizedBox(width: 8),
+                            Text('Delete', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // Title and Description
+            Text(
+              deadline.title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.darkBlue,
+                decoration: isCompleted 
+                    ? TextDecoration.lineThrough 
+                    : (isCancelled ? TextDecoration.lineThrough : null),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              deadline.description,
+              style: TextStyle(
+                color: Colors.grey.shade600,
+                fontSize: 14,
+                height: 1.35,
+              ),
+            ),
+            const SizedBox(height: 14),
+            const Divider(height: 1),
+            const SizedBox(height: 14),
+
+            // Info rows: Department and Creator, Checkbox, edit/delete actions
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
                     children: [
-                      // Completed status checkbox
-                      if (!isCancelled)
-                        Checkbox(
-                          value: isCompleted,
-                          activeColor: Colors.green,
-                          onChanged: (val) {
-                            if (val != null) {
-                              ref.read(deadlinesProvider.notifier).updateDeadline(
-                                deadline.id,
-                                {'status': val ? 'COMPLETED' : 'ACTIVE'},
-                              );
-                            }
-                          },
+                      // Department Row
+                      if (deadline.departmentName != null)
+                        Row(
+                          children: [
+                            Icon(Icons.business_outlined, size: 16, color: Colors.blue.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Department', style: TextStyle(fontSize: 10, color: Colors.black45)),
+                                  Text(
+                                    deadline.departmentName!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlue),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
-                      if (canManage && !isCancelled && !isCompleted)
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, color: AppTheme.primary, size: 18),
-                          onPressed: () => _showDeadlineModal(context, deadline),
-                        ),
-                      if (canManage)
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 18),
-                          onPressed: () => _showDeleteConfirm(context, deadline.id),
+                      const SizedBox(height: 10),
+                      // Creator Row
+                      if (deadline.createdByFullName != null)
+                        Row(
+                          children: [
+                            Icon(Icons.person_outline, size: 16, color: Colors.blue.shade600),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('By', style: TextStyle(fontSize: 10, color: Colors.black45)),
+                                  Text(
+                                    deadline.createdByFullName!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppTheme.darkBlue),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),
-                ],
-              ),
-            ],
-          ),
+                ),
+                
+                // Actions bottom alignment
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Checkbox
+                    if (!isCancelled)
+                      Checkbox(
+                        value: isCompleted,
+                        activeColor: Colors.green,
+                        onChanged: (val) {
+                          if (val != null) {
+                            ref.read(deadlinesProvider.notifier).updateDeadline(
+                              deadline.id,
+                              {'status': val ? 'COMPLETED' : 'ACTIVE'},
+                            );
+                          }
+                        },
+                      ),
+                    
+                    // Edit pencil soft-blue card
+                    if (canManage && !isCancelled && !isCompleted) ...[
+                      const SizedBox(width: 4),
+                      InkWell(
+                        onTap: () => _showDeadlineModal(context, deadline),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.blue.shade50),
+                          ),
+                          child: Icon(Icons.edit_outlined, color: AppTheme.primary, size: 18),
+                        ),
+                      ),
+                    ],
+
+                    // Delete trash soft-red card
+                    if (canManage) ...[
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () => _showDeleteConfirm(context, deadline.id),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade50.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.red.shade50),
+                          ),
+                          child: const Icon(Icons.delete_outline, color: AppTheme.error, size: 18),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );
@@ -470,9 +612,11 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                     backgroundColor: Colors.green,
                   ),
                 );
-                if (await Haptics.canVibrate()) {
-                  await Haptics.vibrate(HapticsType.warning);
-                }
+                try {
+                  if (await Haptics.canVibrate()) {
+                    await Haptics.vibrate(HapticsType.warning);
+                  }
+                } catch (_) {}
               } catch (e) {
                 scaffoldMessenger.showSnackBar(
                   SnackBar(
@@ -522,7 +666,6 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
               departmentId = deptsAsync.value!.first.id;
             }
 
-            // Adjust height dynamically to accommodate keyboards
             final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
             final sheetHeight = MediaQuery.of(context).size.height * 0.88;
 
@@ -604,7 +747,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                               ),
                               const SizedBox(height: 14),
                               
-                              // 3. Priority (and target department in side-by-side layout if not Faculty)
+                              // 3. Priority
                               Row(
                                 children: [
                                   Expanded(
@@ -666,7 +809,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                 ],
                               ),
                               const SizedBox(height: 14),
-
+ 
                               // 4. Due Date Picker Button Card
                               InkWell(
                                 onTap: () async {
@@ -722,7 +865,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                 ),
                               ),
                               const SizedBox(height: 16),
-
+ 
                               // 5. Reminder Settings Group Card
                               if (existing == null) ...[
                                 Container(
@@ -783,7 +926,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                 ),
                                 const SizedBox(height: 12),
                               ],
-
+ 
                               // 6. Google Calendar Sync Toggle
                               if (existing == null) ...[
                                 SwitchListTile(
@@ -800,7 +943,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                 ),
                                 const SizedBox(height: 12),
                               ],
-
+ 
                               // 7. Cancel Option (Visible when editing ACTIVE deadline)
                               if (existing != null && existing.status == 'ACTIVE') ...[
                                 SizedBox(
@@ -832,7 +975,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                           ],
                                         ),
                                       );
-
+ 
                                       if (confirm == true) {
                                         try {
                                           await ref.read(deadlinesProvider.notifier).updateDeadline(
@@ -855,7 +998,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                 ),
                                 const SizedBox(height: 20),
                               ],
-
+ 
                               // 8. Submit Button
                               SizedBox(
                                 width: double.infinity,
@@ -876,12 +1019,11 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                                       
                                       final finalDeptId = isFaculty ? userDeptId! : departmentId;
                                       
-                                      // Package reminder settings keys
                                       final List<String> reminderSettings = [];
                                       if (remind1Day) reminderSettings.add('24_HOURS');
                                       if (remind6Hours) reminderSettings.add('6_HOURS');
                                       if (remind1Hour) reminderSettings.add('1_HOUR');
-
+ 
                                       try {
                                         if (existing == null) {
                                           await ref.read(deadlinesProvider.notifier).createDeadline(

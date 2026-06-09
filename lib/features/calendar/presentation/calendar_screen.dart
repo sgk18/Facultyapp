@@ -3,6 +3,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:haptic_feedback/haptic_feedback.dart';
+
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../deadlines/presentation/deadlines_provider.dart';
@@ -20,6 +21,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
+  String _selectedCategory = 'ALL'; // 'ALL', 'DEADLINES', 'EVENTS', 'REMINDERS'
 
   @override
   void initState() {
@@ -53,10 +55,20 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
       orElse: () => [],
     );
 
-    // Get combined events for the selected day
-    final dayDeadlines = allDeadlines.where((d) => _isSameDay(d.dueDate, _selectedDay)).toList();
-    final dayReminders = allReminders.where((r) => _isSameDay(r.reminderTime, _selectedDay)).toList();
-    final dayEvents = allCalendarEvents.where((e) => _isSameDay(e.startTime, _selectedDay)).toList();
+    // Filter list items based on selected category & day
+    final dayDeadlines = (_selectedCategory == 'ALL' || _selectedCategory == 'DEADLINES')
+        ? allDeadlines.where((d) => _isSameDay(d.dueDate, _selectedDay)).toList()
+        : <Deadline>[];
+        
+    final dayReminders = (_selectedCategory == 'ALL' || _selectedCategory == 'REMINDERS')
+        ? allReminders.where((r) => _isSameDay(r.reminderTime, _selectedDay)).toList()
+        : <Reminder>[];
+        
+    final dayEvents = (_selectedCategory == 'ALL' || _selectedCategory == 'EVENTS')
+        ? allCalendarEvents.where((e) => _isSameDay(e.startTime, _selectedDay)).toList()
+        : <CalendarEvent>[];
+
+    final hasAnySchedule = dayDeadlines.isNotEmpty || dayReminders.isNotEmpty || dayEvents.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(
@@ -67,116 +79,258 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.tune, color: AppTheme.primary),
+            onPressed: () {},
+          ),
+          const SizedBox(width: 16),
+        ],
       ),
       body: Column(
         children: [
-          // TableCalendar Widget Card
+          // TableCalendar Widget Card with Custom Header Controls
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: GlassCard(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-              child: TableCalendar(
-                firstDay: DateTime.now().subtract(const Duration(days: 365)),
-                lastDay: DateTime.now().add(const Duration(days: 365)),
-                focusedDay: _focusedDay,
-                calendarFormat: _calendarFormat,
-                selectedDayPredicate: (day) {
-                  return _isSameDay(_selectedDay, day);
-                },
-                onDaySelected: (selectedDay, focusedDay) {
-                  setState(() {
-                    _selectedDay = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
-                    _focusedDay = focusedDay;
-                  });
-                },
-                onFormatChanged: (format) {
-                  if (_calendarFormat != format) {
-                    setState(() {
-                      _calendarFormat = format;
-                    });
-                  }
-                },
-                onPageChanged: (focusedDay) {
-                  _focusedDay = focusedDay;
-                },
-                eventLoader: (day) {
-                  // Return a non-empty list if any event, reminder, or deadline exists on this day
-                  final dMatch = allDeadlines.any((d) => _isSameDay(d.dueDate, day));
-                  final rMatch = allReminders.any((r) => _isSameDay(r.reminderTime, day));
-                  final eMatch = allCalendarEvents.any((e) => _isSameDay(e.startTime, day));
-                  
-                  List<String> markers = [];
-                  if (dMatch) markers.add('deadline');
-                  if (rMatch) markers.add('reminder');
-                  if (eMatch) markers.add('event');
-                  return markers;
-                },
-                calendarStyle: CalendarStyle(
-                  selectedDecoration: const BoxDecoration(
-                    color: AppTheme.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  todayDecoration: BoxDecoration(
-                    color: AppTheme.primary.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  markerDecoration: const BoxDecoration(
-                    color: Colors.redAccent,
-                    shape: BoxShape.circle,
-                  ),
-                  markersMaxCount: 3,
-                ),
-                calendarBuilders: CalendarBuilders(
-                  markerBuilder: (context, date, events) {
-                    if (events.isEmpty) return const SizedBox.shrink();
-                    return Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: events.map((event) {
-                        Color markerColor = Colors.grey;
-                        if (event == 'deadline') markerColor = Colors.red;
-                        if (event == 'reminder') markerColor = AppTheme.primary;
-                        if (event == 'event') markerColor = Colors.green;
-                        return Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 1.5),
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: markerColor,
+              child: Column(
+                children: [
+                  // Custom Calendar Header Controls
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.chevron_left, color: Colors.grey.shade600),
+                        onPressed: () {
+                          setState(() {
+                            // Page backward by 1 month
+                            _focusedDay = DateTime(_focusedDay.year, _focusedDay.month - 1);
+                          });
+                        },
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            DateFormat('MMMM yyyy').format(_focusedDay),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.darkBlue,
+                            ),
                           ),
+                          const SizedBox(width: 8),
+                          // Dropdown selector for calendar format
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<CalendarFormat>(
+                                value: _calendarFormat,
+                                icon: const Icon(Icons.keyboard_arrow_down, size: 16, color: AppTheme.primary),
+                                style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.bold, fontSize: 12),
+                                dropdownColor: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setState(() {
+                                      _calendarFormat = val;
+                                    });
+                                  }
+                                },
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: CalendarFormat.month,
+                                    child: Text('Month'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: CalendarFormat.twoWeeks,
+                                    child: Text('2 weeks'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: CalendarFormat.week,
+                                    child: Text('Week'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.chevron_right, color: Colors.grey.shade600),
+                        onPressed: () {
+                          setState(() {
+                            // Page forward by 1 month
+                            _focusedDay = DateTime(_focusedDay.year, _focusedDay.month + 1);
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  
+                  // TableCalendar Grid
+                  TableCalendar(
+                    firstDay: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDay: DateTime.now().add(const Duration(days: 365)),
+                    focusedDay: _focusedDay,
+                    calendarFormat: _calendarFormat,
+                    headerVisible: false, // Hide default TableCalendar header
+                    selectedDayPredicate: (day) {
+                      return _isSameDay(_selectedDay, day);
+                    },
+                    onDaySelected: (selectedDay, focusedDay) {
+                      setState(() {
+                        _selectedDay = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                    onFormatChanged: (format) {
+                      if (_calendarFormat != format) {
+                        setState(() {
+                          _calendarFormat = format;
+                        });
+                      }
+                    },
+                    onPageChanged: (focusedDay) {
+                      setState(() {
+                        _focusedDay = focusedDay;
+                      });
+                    },
+                    eventLoader: (day) {
+                      // Return items markers for dot builder
+                      final dMatch = allDeadlines.any((d) => _isSameDay(d.dueDate, day));
+                      final rMatch = allReminders.any((r) => _isSameDay(r.reminderTime, day));
+                      final eMatch = allCalendarEvents.any((e) => _isSameDay(e.startTime, day));
+                      
+                      List<String> markers = [];
+                      if (dMatch) markers.add('deadline');
+                      if (rMatch) markers.add('reminder');
+                      if (eMatch) markers.add('event');
+                      return markers;
+                    },
+                    calendarStyle: CalendarStyle(
+                      selectedDecoration: const BoxDecoration(
+                        color: AppTheme.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      todayDecoration: BoxDecoration(
+                        color: AppTheme.primary.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                      ),
+                      markerDecoration: const BoxDecoration(
+                        color: Colors.redAccent,
+                        shape: BoxShape.circle,
+                      ),
+                      markersMaxCount: 3,
+                      outsideTextStyle: TextStyle(color: Colors.grey.shade300),
+                      outsideDaysVisible: true,
+                    ),
+                    calendarBuilders: CalendarBuilders(
+                      markerBuilder: (context, date, events) {
+                        if (events.isEmpty) return const SizedBox.shrink();
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: events.map((event) {
+                            Color markerColor = Colors.grey;
+                            if (event == 'deadline') markerColor = Colors.red;
+                            if (event == 'reminder') markerColor = AppTheme.primary;
+                            if (event == 'event') markerColor = Colors.green;
+                            return Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 1.5),
+                              width: 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: markerColor,
+                              ),
+                            );
+                          }).toList(),
                         );
-                      }).toList(),
-                    );
-                  },
-                ),
+                      },
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
           
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           
-          // Header showing selected day name
+          // Selected Day Banner with "Today" Button
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
             child: Row(
               children: [
-                Text(
-                  DateFormat('EEEE, MMMM dd').format(_selectedDay),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.darkBlue,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
                   ),
+                  child: const Icon(Icons.calendar_month, color: AppTheme.primary, size: 24),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    DateFormat('EEEE, MMMM dd').format(_selectedDay),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.darkBlue,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      final now = DateTime.now();
+                      _selectedDay = DateTime(now.year, now.month, now.day);
+                      _focusedDay = now;
+                    });
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade50,
+                    foregroundColor: AppTheme.primary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
+                  child: const Text('Today', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ],
             ),
           ),
           
+          const SizedBox(height: 4),
+
+          // Capsule Category Toggles
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildCategoryCapsule('ALL', 'All', null, Colors.transparent),
+                  _buildCategoryCapsule('DEADLINES', 'Deadlines', Icons.flag, Colors.red),
+                  _buildCategoryCapsule('EVENTS', 'Events', Icons.school, Colors.green),
+                  _buildCategoryCapsule('REMINDERS', 'Reminders', Icons.alarm, AppTheme.primary),
+                ],
+              ),
+            ),
+          ),
+
           const SizedBox(height: 8),
 
           // Selected day items list
           Expanded(
-            child: (dayDeadlines.isEmpty && dayReminders.isEmpty && dayEvents.isEmpty)
+            child: !hasAnySchedule
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -197,39 +351,59 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       if (dayDeadlines.isNotEmpty) ...[
                         const Text('DEADLINES', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.red, letterSpacing: 1.2)),
                         const SizedBox(height: 8),
-                        ...dayDeadlines.map((d) => _buildScheduleCard(
-                          context: context,
-                          title: d.title,
-                          subtitle: d.description,
-                          time: DateFormat('hh:mm a').format(d.dueDate.toLocal()),
-                          icon: Icons.flag,
-                          iconColor: Colors.red,
-                          cardColor: Colors.red.shade50.withValues(alpha: 0.3),
-                          trailing: Checkbox(
-                            value: d.isCompleted,
-                            activeColor: Colors.green,
-                            onChanged: (val) {
-                              if (val != null) {
-                                ref.read(deadlinesProvider.notifier).updateDeadline(d.id, {'isCompleted': val});
-                              }
-                            },
-                          ),
-                        )),
+                        ...dayDeadlines.map((d) {
+                          Color priorityBadgeColor;
+                          Color priorityBadgeBg;
+                          switch (d.priority) {
+                            case 'HIGH':
+                              priorityBadgeColor = Colors.red.shade700;
+                              priorityBadgeBg = Colors.red.shade50;
+                              break;
+                            case 'MEDIUM':
+                              priorityBadgeColor = Colors.amber.shade800;
+                              priorityBadgeBg = Colors.amber.shade50;
+                              break;
+                            default:
+                              priorityBadgeColor = Colors.green.shade700;
+                              priorityBadgeBg = Colors.green.shade50;
+                          }
+                          return _buildCustomScheduleCard(
+                            context: context,
+                            title: d.title,
+                            subtitle: d.description,
+                            time: DateFormat('hh:mm a').format(d.dueDate.toLocal()),
+                            icon: Icons.flag,
+                            iconColor: Colors.red,
+                            iconBgColor: Colors.red.shade50,
+                            priorityBadgeText: d.priority,
+                            priorityBadgeColor: priorityBadgeColor,
+                            priorityBadgeBg: priorityBadgeBg,
+                            trailing: Checkbox(
+                              value: d.isCompleted,
+                              activeColor: Colors.green,
+                              onChanged: (val) {
+                                if (val != null) {
+                                  ref.read(deadlinesProvider.notifier).updateDeadline(d.id, {'isCompleted': val});
+                                }
+                              },
+                            ),
+                          );
+                        }),
                       ],
                       
                       // Render Calendar Events
                       if (dayEvents.isNotEmpty) ...[
-                        const SizedBox(height: 16),
+                        if (dayDeadlines.isNotEmpty) const SizedBox(height: 16),
                         const Text('CALENDAR EVENTS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.green, letterSpacing: 1.2)),
                         const SizedBox(height: 8),
-                        ...dayEvents.map((e) => _buildScheduleCard(
+                        ...dayEvents.map((e) => _buildCustomScheduleCard(
                           context: context,
                           title: e.title,
                           subtitle: e.description ?? 'Academic Event',
                           time: '${DateFormat('hh:mm a').format(e.startTime.toLocal())} - ${DateFormat('hh:mm a').format(e.endTime.toLocal())}',
                           icon: Icons.school,
                           iconColor: Colors.green,
-                          cardColor: Colors.green.shade50.withValues(alpha: 0.3),
+                          iconBgColor: Colors.green.shade50,
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
                             onPressed: () => _showDeleteEventConfirm(context, e.id),
@@ -239,17 +413,17 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
 
                       // Render Reminders
                       if (dayReminders.isNotEmpty) ...[
-                        const SizedBox(height: 16),
+                        if (dayDeadlines.isNotEmpty || dayEvents.isNotEmpty) const SizedBox(height: 16),
                         const Text('PERSONAL REMINDERS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.primary, letterSpacing: 1.2)),
                         const SizedBox(height: 8),
-                        ...dayReminders.map((r) => _buildScheduleCard(
+                        ...dayReminders.map((r) => _buildCustomScheduleCard(
                           context: context,
                           title: r.title,
                           subtitle: '${r.description ?? "Reminder alert"} (${r.repeatType})',
                           time: DateFormat('hh:mm a').format(r.reminderTime.toLocal()),
                           icon: Icons.alarm,
                           iconColor: AppTheme.primary,
-                          cardColor: AppTheme.primary.withValues(alpha: 0.05),
+                          iconBgColor: AppTheme.primary.withValues(alpha: 0.1),
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -286,28 +460,72 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     );
   }
 
-  Widget _buildScheduleCard({
+  Widget _buildCategoryCapsule(String category, String label, IconData? icon, Color iconColor) {
+    final isSelected = _selectedCategory == category;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        showCheckmark: false,
+        label: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(icon, color: isSelected ? Colors.white : iconColor, size: 16),
+              const SizedBox(width: 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : AppTheme.darkBlue,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+        selected: isSelected,
+        selectedColor: AppTheme.primary,
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: isSelected ? Colors.transparent : Colors.grey.shade200,
+          ),
+        ),
+        onSelected: (val) {
+          setState(() {
+            _selectedCategory = category;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildCustomScheduleCard({
     required BuildContext context,
     required String title,
     required String subtitle,
     required String time,
     required IconData icon,
     required Color iconColor,
-    required Color cardColor,
-    required Widget trailing,
+    required Color iconBgColor,
+    Widget? trailing,
+    String? priorityBadgeText,
+    Color? priorityBadgeColor,
+    Color? priorityBadgeBg,
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: GlassCard(
-        backgroundColor: cardColor,
+        backgroundColor: Colors.white,
         padding: const EdgeInsets.all(16),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: iconColor.withValues(alpha: 0.1),
+                color: iconBgColor,
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: iconColor, size: 20),
@@ -333,21 +551,42 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                       fontSize: 13,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.access_time, size: 12, color: Colors.black45),
+                      const Icon(Icons.access_time_filled, size: 14, color: Colors.black38),
                       const SizedBox(width: 4),
                       Text(
                         time,
-                        style: const TextStyle(color: Colors.black45, fontSize: 11, fontWeight: FontWeight.w500),
+                        style: const TextStyle(color: Colors.black45, fontSize: 12, fontWeight: FontWeight.w500),
                       ),
+                      if (priorityBadgeText != null) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: priorityBadgeBg ?? Colors.red.shade50,
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            priorityBadgeText,
+                            style: TextStyle(
+                              color: priorityBadgeColor ?? Colors.red.shade700,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
               ),
             ),
-            trailing,
+            if (trailing != null) ...[
+              const SizedBox(width: 8),
+              trailing,
+            ],
           ],
         ),
       ),
