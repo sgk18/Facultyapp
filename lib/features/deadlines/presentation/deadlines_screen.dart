@@ -460,13 +460,27 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
           TextButton(
             style: TextButton.styleFrom(foregroundColor: AppTheme.error),
             onPressed: () async {
-              ref.read(deadlinesProvider.notifier).deleteDeadline(deadlineId);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               Navigator.pop(ctx);
               try {
+                await ref.read(deadlinesProvider.notifier).deleteDeadline(deadlineId);
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Deadline deleted successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
                 if (await Haptics.canVibrate()) {
                   await Haptics.vibrate(HapticsType.warning);
                 }
-              } catch (_) {}
+              } catch (e) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to delete deadline: $e'),
+                    backgroundColor: AppTheme.error,
+                  ),
+                );
+              }
             },
             child: const Text('Delete'),
           ),

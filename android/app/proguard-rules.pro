@@ -10,3 +10,6 @@
 
 # Sentry / Flutter integration
 -keep class io.sentry.** { *; }
+
+# Ignore warnings for missing Play Core classes (used by Flutter deferred components)
+-dontwarn com.google.android.play.core.**

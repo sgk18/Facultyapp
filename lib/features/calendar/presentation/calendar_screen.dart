@@ -231,8 +231,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           cardColor: Colors.green.shade50.withValues(alpha: 0.3),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
-                            onPressed: () {
-                              ref.read(calendarEventsProvider.notifier).deleteCalendarEvent(e.id);
+                            onPressed: () async {
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
+                              try {
+                                await ref.read(calendarEventsProvider.notifier).deleteCalendarEvent(e.id);
+                                scaffoldMessenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Calendar event deleted successfully!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } catch (err) {
+                                scaffoldMessenger.showSnackBar(
+                                  SnackBar(
+                                    content: Text('Failed to delete event: $err'),
+                                    backgroundColor: AppTheme.error,
+                                  ),
+                                );
+                              }
                             },
                           ),
                         )),
@@ -268,8 +284,24 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
-                                onPressed: () {
-                                  ref.read(remindersProvider.notifier).deleteReminder(r.id);
+                                onPressed: () async {
+                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                  try {
+                                    await ref.read(remindersProvider.notifier).deleteReminder(r.id);
+                                    scaffoldMessenger.showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Reminder deleted successfully!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  } catch (err) {
+                                    scaffoldMessenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to delete reminder: $err'),
+                                        backgroundColor: AppTheme.error,
+                                      ),
+                                    );
+                                  }
                                 },
                               ),
                             ],
