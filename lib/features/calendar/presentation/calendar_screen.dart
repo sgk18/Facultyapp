@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:haptic_feedback/haptic_feedback.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../deadlines/presentation/deadlines_provider.dart';
@@ -231,25 +232,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                           cardColor: Colors.green.shade50.withValues(alpha: 0.3),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
-                            onPressed: () async {
-                              final scaffoldMessenger = ScaffoldMessenger.of(context);
-                              try {
-                                await ref.read(calendarEventsProvider.notifier).deleteCalendarEvent(e.id);
-                                scaffoldMessenger.showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Calendar event deleted successfully!'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              } catch (err) {
-                                scaffoldMessenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text('Failed to delete event: $err'),
-                                    backgroundColor: AppTheme.error,
-                                  ),
-                                );
-                              }
-                            },
+                            onPressed: () => _showDeleteEventConfirm(context, e.id),
                           ),
                         )),
                       ],
@@ -284,25 +267,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline, color: AppTheme.error, size: 20),
-                                onPressed: () async {
-                                  final scaffoldMessenger = ScaffoldMessenger.of(context);
-                                  try {
-                                    await ref.read(remindersProvider.notifier).deleteReminder(r.id);
-                                    scaffoldMessenger.showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Reminder deleted successfully!'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  } catch (err) {
-                                    scaffoldMessenger.showSnackBar(
-                                      SnackBar(
-                                        content: Text('Failed to delete reminder: $err'),
-                                        backgroundColor: AppTheme.error,
-                                      ),
-                                    );
-                                  }
-                                },
+                                onPressed: () => _showDeleteReminderConfirm(context, r.id),
                               ),
                             ],
                           ),
@@ -385,6 +350,96 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
             trailing,
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDeleteEventConfirm(BuildContext context, String eventId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Calendar Event'),
+        content: const Text('Are you sure you want to permanently delete this calendar event? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              Navigator.pop(ctx);
+              try {
+                await ref.read(calendarEventsProvider.notifier).deleteCalendarEvent(eventId);
+                try {
+                  if (await Haptics.canVibrate()) {
+                    await Haptics.vibrate(HapticsType.warning);
+                  }
+                } catch (_) {}
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Calendar event deleted successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (err) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to delete event: $err'),
+                    backgroundColor: AppTheme.error,
+                  ),
+                );
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteReminderConfirm(BuildContext context, String reminderId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Reminder'),
+        content: const Text('Are you sure you want to permanently delete this reminder? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(foregroundColor: AppTheme.error),
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              Navigator.pop(ctx);
+              try {
+                await ref.read(remindersProvider.notifier).deleteReminder(reminderId);
+                try {
+                  if (await Haptics.canVibrate()) {
+                    await Haptics.vibrate(HapticsType.warning);
+                  }
+                } catch (_) {}
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Reminder deleted successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (err) {
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to delete reminder: $err'),
+                    backgroundColor: AppTheme.error,
+                  ),
+                );
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

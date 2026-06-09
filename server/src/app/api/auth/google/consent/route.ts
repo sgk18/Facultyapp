@@ -79,6 +79,8 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
       googleId: null,
       gmailSyncEnabled: false,
       calendarSyncEnabled: false,
+      googleAccessToken: null,
+      googleRefreshToken: null,
     },
   });
 

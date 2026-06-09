@@ -46,6 +46,10 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // Seed token cache expiry
+    const { SyncService } = require('@/services/sync.service');
+    SyncService.setTokenExpiry(userId, tokens.expiresIn || 3600);
+
     // 5. Render a styled success HTML page that deep-links back to the app
     const successHtml = `
       <!DOCTYPE html>

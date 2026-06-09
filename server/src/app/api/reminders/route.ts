@@ -107,11 +107,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
-  // Mock Google Calendar sync trigger if requested
+  // Sync new reminder to Google Calendar if requested
   if (reminder.syncToCalendar) {
     const { SyncService } = require('@/services/sync.service');
-    SyncService.syncCalendarForUser(user.id).catch((err: any) => {
-      console.error('Failed to sync new reminder to Google Calendar:', err);
+    SyncService.pushDeadlineToGoogleCalendar(reminder.id).catch((err: any) => {
+      console.error('Failed to push new reminder to Google Calendar:', err);
     });
   }
 
@@ -201,6 +201,13 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
 
   if (reminder.ownerId !== user.id) {
     throw new ForbiddenError('You do not own this reminder');
+  }
+
+  if (reminder.googleEventId) {
+    const { SyncService } = require('@/services/sync.service');
+    SyncService.deleteDeadlineFromGoogleCalendar(user.id, reminder.googleEventId).catch((err: any) => {
+      console.error('Failed to delete reminder from Google Calendar:', err);
+    });
   }
 
   await prisma.deadline.delete({

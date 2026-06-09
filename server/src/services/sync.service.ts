@@ -1,24 +1,24 @@
 import { prisma } from '@/lib/prisma';
 import { GoogleClient } from '@/lib/google';
 
+const tokenExpirations = new Map<string, number>();
+
 async function getOrRefreshAccessToken(userId: string): Promise<string | null> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
   if (!user || !user.googleAccessToken) return null;
-  if (!user.googleRefreshToken) return user.googleAccessToken;
 
-  // Verify if token is still valid
-  try {
-    const res = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${user.googleAccessToken}`);
-    if (res.ok) {
-      const data = await res.json();
-      if (Number(data.expires_in) > 60) {
-        return user.googleAccessToken;
-      }
-    }
-  } catch (e) {
-    // ignore
+  const now = Date.now();
+  const cachedExpiry = tokenExpirations.get(userId);
+
+  // If cached expiry is valid, return immediately (skips slow network check)
+  if (cachedExpiry && cachedExpiry > now) {
+    return user.googleAccessToken;
+  }
+
+  if (!user.googleRefreshToken) {
+    return user.googleAccessToken;
   }
 
   // Refresh token
@@ -28,6 +28,8 @@ async function getOrRefreshAccessToken(userId: string): Promise<string | null> {
       where: { id: userId },
       data: { googleAccessToken: newAccessToken },
     });
+    // Cache token expiration for 55 minutes
+    tokenExpirations.set(userId, now + 55 * 60 * 1000);
     return newAccessToken;
   } catch (error) {
     console.error('Failed to refresh Google access token for user:', userId, error);
@@ -69,6 +71,13 @@ function extractDate(text: string): Date {
 }
 
 export class SyncService {
+  /**
+   * Pre-seeds the in-memory token cache expiry.
+   */
+  static setTokenExpiry(userId: string, expiresInSeconds: number) {
+    tokenExpirations.set(userId, Date.now() + (expiresInSeconds - 60) * 1000);
+  }
+
   /**
    * Scans connected Gmail accounts for academic deadlines, then parses and registers them.
    */
