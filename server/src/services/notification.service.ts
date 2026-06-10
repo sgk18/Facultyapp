@@ -113,7 +113,7 @@ export class NotificationService {
           user.fullName,
           deadlineTitle,
           dueDateStr,
-          description
+          description,
         );
       } catch (err) {
         // Log errors locally so a failure for one user doesn't crash dispatching to others
@@ -185,7 +185,7 @@ export class NotificationService {
         user.fullName,
         deadlineTitle,
         dueDateStr,
-        description
+        description,
       );
     } catch (err) {
       console.error(`Failed to notify user ${user.id} (${user.email}):`, err);
@@ -194,4 +194,3 @@ export class NotificationService {
     return { success: true };
   }
 }
-

@@ -1,17 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { withErrorHandler, sendSuccess, UnauthorizedError } from '@/utils/errors';
+import {
+  withErrorHandler,
+  sendSuccess,
+  UnauthorizedError,
+} from '@/utils/errors';
 import { ReminderEmailService } from '@/services/reminder.email.service';
-import { PushNotificationService, ReminderPushService } from '@/services/push.service';
+import {
+  PushNotificationService,
+  ReminderPushService,
+} from '@/services/push.service';
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   // 1. Security Check: Enforce CRON_SECRET auth on production environments
   const authHeader = req.headers.get('Authorization');
   const cronSecret = process.env.CRON_SECRET;
-  
+
   if (process.env.NODE_ENV === 'production' && cronSecret) {
     if (!authHeader || authHeader !== `Bearer ${cronSecret}`) {
-      throw new UnauthorizedError('Unauthorized trigger of background cron scheduler');
+      throw new UnauthorizedError(
+        'Unauthorized trigger of background cron scheduler',
+      );
     }
   }
 
@@ -36,7 +45,9 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     take: 100, // Process in batches of 100 to prevent timeout
   });
 
-  console.log(`[Cron Scheduler] Found ${pendingNotifications.length} pending reminder(s) to process`);
+  console.log(
+    `[Cron Scheduler] Found ${pendingNotifications.length} pending reminder(s) to process`,
+  );
 
   let sentCount = 0;
   let failedCount = 0;
@@ -70,7 +81,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     const diffTime = deadline.dueDate.getTime() - item.scheduledFor.getTime();
     // Convert ms to days. Math.round handles slight variations in timing.
     let daysRemaining = Math.round(diffTime / (24 * 60 * 60 * 1000));
-    
+
     // Support fractions for hours (12h -> 0.5, 6h -> 0.25, 1h -> 1/24)
     const hoursRemaining = diffTime / (60 * 60 * 1000);
     if (Math.abs(hoursRemaining - 12) < 0.1) {
@@ -81,15 +92,18 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       daysRemaining = 1 / 24;
     }
 
-    const formattedDueDate = new Date(deadline.dueDate).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    });
+    const formattedDueDate = new Date(deadline.dueDate).toLocaleDateString(
+      'en-US',
+      {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      },
+    );
 
     try {
       let success = false;
@@ -115,7 +129,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           departmentCode: deadline.department.code,
           description: deadline.description,
         });
-
       } else if (channel === 'push') {
         // Enforce user push channel preference
         if (!user.pushNotificationsEnabled) {
@@ -127,7 +140,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           continue;
         }
 
-        const pushContent = ReminderPushService.generatePushText(daysRemaining, deadline.title);
+        const pushContent = ReminderPushService.generatePushText(
+          daysRemaining,
+          deadline.title,
+        );
         success = await PushNotificationService.sendPushToUser(
           user.id,
           pushContent.title,
@@ -135,9 +151,8 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
           {
             deadlineId: deadline.id,
             daysRemaining: String(daysRemaining),
-          }
+          },
         );
-
       } else if (channel === 'in_app') {
         // Enforce user in-app channel preference
         if (!user.inAppNotificationsEnabled) {
@@ -150,7 +165,10 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         }
 
         // In-app does not need external API, we create DB record directly
-        const pushContent = ReminderPushService.generatePushText(daysRemaining, deadline.title);
+        const pushContent = ReminderPushService.generatePushText(
+          daysRemaining,
+          deadline.title,
+        );
         await prisma.notification.create({
           data: {
             userId: user.id,
@@ -183,10 +201,13 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     }
   }
 
-  return sendSuccess({
-    processed: pendingNotifications.length,
-    sent: sentCount,
-    failed: failedCount,
-    skipped: skippedCount,
-  }, 'Scheduled reminders processed successfully');
+  return sendSuccess(
+    {
+      processed: pendingNotifications.length,
+      sent: sentCount,
+      failed: failedCount,
+      skipped: skippedCount,
+    },
+    'Scheduled reminders processed successfully',
+  );
 });

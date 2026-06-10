@@ -17,43 +17,44 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   const rSkip = (rPage - 1) * rLimit;
 
   // Fetch deadlines and reminders along with count in parallel
-  const [deadlines, totalDeadlines, reminders, totalReminders] = await Promise.all([
-    prisma.deadline.findMany({
-      skip: dSkip,
-      take: dLimit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        owner: {
-          select: {
-            fullName: true,
-            email: true,
+  const [deadlines, totalDeadlines, reminders, totalReminders] =
+    await Promise.all([
+      prisma.deadline.findMany({
+        skip: dSkip,
+        take: dLimit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          owner: {
+            select: {
+              fullName: true,
+              email: true,
+            },
+          },
+          department: {
+            select: {
+              name: true,
+              code: true,
+            },
           },
         },
-        department: {
-          select: {
-            name: true,
-            code: true,
+      }),
+      prisma.deadline.count(),
+      prisma.deadline.findMany({
+        where: { reminderEnabled: true },
+        skip: rSkip,
+        take: rLimit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          owner: {
+            select: {
+              fullName: true,
+              email: true,
+            },
           },
         },
-      },
-    }),
-    prisma.deadline.count(),
-    prisma.deadline.findMany({
-      where: { reminderEnabled: true },
-      skip: rSkip,
-      take: rLimit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        owner: {
-          select: {
-            fullName: true,
-            email: true,
-          },
-        },
-      },
-    }),
-    prisma.deadline.count({ where: { reminderEnabled: true } }),
-  ]);
+      }),
+      prisma.deadline.count({ where: { reminderEnabled: true } }),
+    ]);
 
   const mappedReminders = reminders.map((r) => ({
     id: r.id,
@@ -90,6 +91,6 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         },
       },
     },
-    'User activity logs retrieved successfully'
+    'User activity logs retrieved successfully',
   );
 });

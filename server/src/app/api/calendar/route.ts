@@ -1,5 +1,11 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors';
+import {
+  withErrorHandler,
+  sendSuccess,
+  ValidationError,
+  NotFoundError,
+  ForbiddenError,
+} from '@/utils/errors';
 import { requireAuth } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 
@@ -37,7 +43,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const body = await req.json();
 
   if (!body.title || !body.startTime || !body.endTime) {
-    throw new ValidationError('title, startTime, and endTime are required fields');
+    throw new ValidationError(
+      'title, startTime, and endTime are required fields',
+    );
   }
 
   const startTime = new Date(body.startTime);
@@ -111,7 +119,8 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
   const updateData: any = {};
   if (body.title !== undefined) updateData.title = body.title;
   if (body.description !== undefined) updateData.description = body.description;
-  if (body.startTime !== undefined) updateData.dueDate = new Date(body.startTime);
+  if (body.startTime !== undefined)
+    updateData.dueDate = new Date(body.startTime);
 
   const updated = await prisma.deadline.update({
     where: { id: body.id },
@@ -165,8 +174,14 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
 
   if (event.googleEventId) {
     const { SyncService } = require('@/services/sync.service');
-    SyncService.deleteDeadlineFromGoogleCalendar(user.id, event.googleEventId).catch((err: any) => {
-      console.error('Failed to delete calendar event for deleted deadline:', err);
+    SyncService.deleteDeadlineFromGoogleCalendar(
+      user.id,
+      event.googleEventId,
+    ).catch((err: any) => {
+      console.error(
+        'Failed to delete calendar event for deleted deadline:',
+        err,
+      );
     });
   }
 

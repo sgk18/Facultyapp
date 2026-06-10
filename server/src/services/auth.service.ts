@@ -6,7 +6,7 @@ export class AuthService {
   /**
    * Logs out the session. (Local sessions are stateless JWTs, so this is a no-op).
    */
-  static async logout() {
-    return true;
+  static logout(): Promise<boolean> {
+    return Promise.resolve(true);
   }
 }

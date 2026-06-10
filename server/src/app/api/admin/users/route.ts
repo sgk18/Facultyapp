@@ -1,5 +1,10 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError, NotFoundError } from '@/utils/errors';
+import {
+  withErrorHandler,
+  sendSuccess,
+  ValidationError,
+  NotFoundError,
+} from '@/utils/errors';
 import { requireAdmin } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 
@@ -25,17 +30,20 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     prisma.user.count({ where: { role: 'HOD' } }),
   ]);
 
-  return sendSuccess({
-    items: users,
-    pagination: {
-      page,
-      limit,
-      total,
-      pages: Math.ceil(total / limit),
-      totalFaculty,
-      totalHods,
-    }
-  }, 'Admin users list retrieved successfully');
+  return sendSuccess(
+    {
+      items: users,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
+        totalFaculty,
+        totalHods,
+      },
+    },
+    'Admin users list retrieved successfully',
+  );
 });
 
 export const PATCH = withErrorHandler(async (req: NextRequest) => {

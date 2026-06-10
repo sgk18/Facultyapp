@@ -1,5 +1,11 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError, ForbiddenError, NotFoundError } from '@/utils/errors';
+import {
+  withErrorHandler,
+  sendSuccess,
+  ValidationError,
+  ForbiddenError,
+  NotFoundError,
+} from '@/utils/errors';
 import { requireAdmin } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 import { AuditService } from '@/services/audit.service';
@@ -11,12 +17,16 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const { userId, suspend } = body;
 
   if (!userId || typeof suspend !== 'boolean') {
-    throw new ValidationError('userId and suspend (boolean) are required fields');
+    throw new ValidationError(
+      'userId and suspend (boolean) are required fields',
+    );
   }
 
   // Prevent self-suspension
   if (userId === admin.id) {
-    throw new ValidationError('Administrators cannot suspend their own accounts');
+    throw new ValidationError(
+      'Administrators cannot suspend their own accounts',
+    );
   }
 
   const targetUser = await prisma.user.findUnique({
@@ -36,5 +46,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const actionText = suspend ? 'SUSPEND_USER' : 'UNSUSPEND_USER';
   await AuditService.logAction(admin.id, actionText, targetUser.email);
 
-  return sendSuccess(updatedUser, `User has been successfully ${suspend ? 'suspended' : 'reinstated'}`);
+  return sendSuccess(
+    updatedUser,
+    `User has been successfully ${suspend ? 'suspended' : 'reinstated'}`,
+  );
 });

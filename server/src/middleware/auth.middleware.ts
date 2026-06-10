@@ -6,7 +6,9 @@ import { UnauthorizedError, ForbiddenError } from '@/utils/errors';
  * Validates that a user is authenticated.
  * Throws UnauthorizedError if token is invalid or missing.
  */
-export async function requireAuth(req: NextRequest): Promise<AuthenticatedUser> {
+export async function requireAuth(
+  req: NextRequest,
+): Promise<AuthenticatedUser> {
   const user = await verifyAuth(req);
   if (!user) {
     throw new UnauthorizedError('Authentication required');
@@ -18,7 +20,9 @@ export async function requireAuth(req: NextRequest): Promise<AuthenticatedUser> 
  * Validates that a user has at least FACULTY privileges.
  * Since all registered users have at least the FACULTY role, this functions identically to requireAuth.
  */
-export async function requireFaculty(req: NextRequest): Promise<AuthenticatedUser> {
+export async function requireFaculty(
+  req: NextRequest,
+): Promise<AuthenticatedUser> {
   const user = await requireAuth(req);
   return user;
 }
@@ -39,7 +43,9 @@ export async function requireHOD(req: NextRequest): Promise<AuthenticatedUser> {
  * Validates Administrator permissions.
  * Throws ForbiddenError if the role is not ADMIN.
  */
-export async function requireAdmin(req: NextRequest): Promise<AuthenticatedUser> {
+export async function requireAdmin(
+  req: NextRequest,
+): Promise<AuthenticatedUser> {
   const user = await requireAuth(req);
   if (user.role !== 'ADMIN') {
     throw new ForbiddenError('Administrator authorization required');

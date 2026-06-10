@@ -1,5 +1,11 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError, UnauthorizedError, ForbiddenError } from '@/utils/errors';
+import {
+  withErrorHandler,
+  sendSuccess,
+  ValidationError,
+  UnauthorizedError,
+  ForbiddenError,
+} from '@/utils/errors';
 import { supabase } from '@/lib/supabase';
 import { prisma } from '@/lib/prisma';
 
@@ -17,14 +23,18 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   // 1. Verify token with Supabase Auth
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) {
-    throw new UnauthorizedError('Session validation failed against Supabase Auth');
+    throw new UnauthorizedError(
+      'Session validation failed against Supabase Auth',
+    );
   }
 
   const supabaseUser = data.user;
   const normalizedEmail = supabaseUser.email?.toLowerCase().trim() || '';
 
   if (!normalizedEmail) {
-    throw new ValidationError('Authentication provider did not supply a valid email address');
+    throw new ValidationError(
+      'Authentication provider did not supply a valid email address',
+    );
   }
 
   // Helper to extract trailing numbers as employeeCode
@@ -45,25 +55,26 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   // 2. Query internal database to see if profile already exists
   let dbUser = await prisma.user.findFirst({
     where: {
-      OR: [
-        { supabaseUserId: supabaseUser.id },
-        { email: normalizedEmail },
-      ],
+      OR: [{ supabaseUserId: supabaseUser.id }, { email: normalizedEmail }],
     },
     include: { department: true },
   });
 
   if (dbUser) {
     const updateData: any = {};
-    
+
     // Sync supabaseUserId if not already mapped
     if (dbUser.supabaseUserId !== supabaseUser.id) {
       updateData.supabaseUserId = supabaseUser.id;
     }
 
     // Check if the name in the database contains a trailing number and clean it up
-    const { fullName: cleanName, employeeCode: extractedCode } = extractEmployeeCode(dbUser.fullName);
-    if (extractedCode && (dbUser.fullName !== cleanName || dbUser.employeeCode !== extractedCode)) {
+    const { fullName: cleanName, employeeCode: extractedCode } =
+      extractEmployeeCode(dbUser.fullName);
+    if (
+      extractedCode &&
+      (dbUser.fullName !== cleanName || dbUser.employeeCode !== extractedCode)
+    ) {
       updateData.fullName = cleanName;
       updateData.employeeCode = extractedCode;
     }
@@ -78,7 +89,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
     // Enforce suspension check
     if (dbUser.isSuspended) {
-      throw new ForbiddenError('This user account has been suspended by administration');
+      throw new ForbiddenError(
+        'This user account has been suspended by administration',
+      );
     }
 
     return sendSuccess(dbUser, 'User profile retrieved successfully');
@@ -86,10 +99,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   // 3. New user registration check
   // Enforce CHRIST University email domain restriction (allowing subdomains like @bsccmh.christuniversity.in)
-  const isApprovedDomain = normalizedEmail.endsWith('@christuniversity.in') || 
-                           normalizedEmail.endsWith('.christuniversity.in');
+  const isApprovedDomain =
+    normalizedEmail.endsWith('@christuniversity.in') ||
+    normalizedEmail.endsWith('.christuniversity.in');
   if (!isApprovedDomain) {
-    throw new ForbiddenError('Access restricted. Institutional @christuniversity.in email domain required.');
+    throw new ForbiddenError(
+      'Access restricted. Institutional @christuniversity.in email domain required.',
+    );
   }
 
   // Find or create default general department
@@ -110,7 +126,10 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-  const rawFullName = supabaseUser.user_metadata?.full_name || fallbackName || 'New Faculty Member';
+  const rawFullName =
+    supabaseUser.user_metadata?.full_name ||
+    fallbackName ||
+    'New Faculty Member';
   const { fullName, employeeCode } = extractEmployeeCode(rawFullName);
   const avatarUrl = supabaseUser.user_metadata?.avatar_url || null;
 
@@ -131,5 +150,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     include: { department: true },
   });
 
-  return sendSuccess(dbUser, 'User profile auto-created and onboarded successfully');
+  return sendSuccess(
+    dbUser,
+    'User profile auto-created and onboarded successfully',
+  );
 });

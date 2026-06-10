@@ -39,7 +39,9 @@ function cleanExpiredCache() {
  * Resolves to the authenticated user's database profile, or null if invalid.
  * Uses local JWT decoding/verification with fallback to Supabase Auth API.
  */
-export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | null> {
+export async function verifyAuth(
+  req: NextRequest,
+): Promise<AuthenticatedUser | null> {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return null;
@@ -66,7 +68,10 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
       const isExpired = decoded.exp * 1000 < now;
       if (isExpired) {
         // Expired token, reject immediately without database or Supabase API overhead
-        tokenCache.set(token, { user: null, expiresAt: now + NEGATIVE_CACHE_TTL_MS });
+        tokenCache.set(token, {
+          user: null,
+          expiresAt: now + NEGATIVE_CACHE_TTL_MS,
+        });
         return null;
       }
     }
@@ -96,7 +101,10 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
         }
       } catch (verifyError) {
         // Log locally but fall through to Supabase API fallback in case of secret mismatch
-        console.warn('Local JWT signature verification failed, trying Supabase Auth fallback:', verifyError);
+        console.warn(
+          'Local JWT signature verification failed, trying Supabase Auth fallback:',
+          verifyError,
+        );
       }
     }
 
@@ -122,11 +130,13 @@ export async function verifyAuth(req: NextRequest): Promise<AuthenticatedUser | 
     }
 
     // Cache failure briefly to mitigate spam
-    tokenCache.set(token, { user: null, expiresAt: now + NEGATIVE_CACHE_TTL_MS });
+    tokenCache.set(token, {
+      user: null,
+      expiresAt: now + NEGATIVE_CACHE_TTL_MS,
+    });
   } catch (error) {
     console.error('Supabase authentication verification failed:', error);
   }
 
   return null;
 }
-

@@ -1,5 +1,10 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError, ForbiddenError } from '@/utils/errors';
+import {
+  withErrorHandler,
+  sendSuccess,
+  ValidationError,
+  ForbiddenError,
+} from '@/utils/errors';
 import { requireAdmin } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 import { userRoleUpdateSchema } from '@/validators/admin';
@@ -13,7 +18,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   if (!result.success) {
     throw new ValidationError(
       'Validation failed',
-      result.error.errors.map((e) => e.message)
+      result.error.errors.map((e) => e.message),
     );
   }
 
@@ -40,5 +45,8 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     include: { department: true },
   });
 
-  return sendSuccess(updatedUser, `Successfully demoted ${updatedUser.fullName} to FACULTY`);
+  return sendSuccess(
+    updatedUser,
+    `Successfully demoted ${updatedUser.fullName} to FACULTY`,
+  );
 });

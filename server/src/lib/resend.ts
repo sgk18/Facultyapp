@@ -7,7 +7,9 @@ if (resendApiKey) {
   resendInstance = new Resend(resendApiKey);
   console.log('Resend Email service initialized');
 } else {
-  console.warn('RESEND_API_KEY is missing. Running in MOCK mode for email dispatches.');
+  console.warn(
+    'RESEND_API_KEY is missing. Running in MOCK mode for email dispatches.',
+  );
 }
 
 export class EmailService {
@@ -19,10 +21,10 @@ export class EmailService {
     facultyName: string,
     deadlineTitle: string,
     dueDateStr: string,
-    description: string
+    description: string,
   ): Promise<boolean> {
     const subject = `[CHRIST University] Academic Deadline Alert: ${deadlineTitle}`;
-    
+
     const htmlContent = `
       <div style="font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); box-sizing: border-box;">
         <!-- Header Bar -->

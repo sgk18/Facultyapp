@@ -1,6 +1,23 @@
 import { prisma } from '@/lib/prisma';
 import { GoogleClient } from '@/lib/google';
 
+interface GmailMessage {
+  payload?: {
+    headers?: Array<{ name: string; value: string }>;
+  };
+  snippet?: string;
+}
+
+interface GoogleCalendarEvent {
+  id?: string;
+  summary?: string;
+  description?: string;
+  start?: {
+    dateTime?: string;
+    date?: string;
+  };
+}
+
 const tokenExpirations = new Map<string, number>();
 
 async function getOrRefreshAccessToken(userId: string): Promise<string | null> {
@@ -23,7 +40,9 @@ async function getOrRefreshAccessToken(userId: string): Promise<string | null> {
 
   // Refresh token
   try {
-    const newAccessToken = await GoogleClient.refreshAccessToken(user.googleRefreshToken);
+    const newAccessToken = await GoogleClient.refreshAccessToken(
+      user.googleRefreshToken,
+    );
     await prisma.user.update({
       where: { id: userId },
       data: { googleAccessToken: newAccessToken },
@@ -32,14 +51,18 @@ async function getOrRefreshAccessToken(userId: string): Promise<string | null> {
     tokenExpirations.set(userId, now + 55 * 60 * 1000);
     return newAccessToken;
   } catch (error) {
-    console.error('Failed to refresh Google access token for user:', userId, error);
+    console.error(
+      'Failed to refresh Google access token for user:',
+      userId,
+      error,
+    );
     return user.googleAccessToken;
   }
 }
 
-function getSubject(msg: any): string {
+function getSubject(msg: GmailMessage): string {
   const headers = msg.payload?.headers || [];
-  const subjectHeader = headers.find((h: any) => h.name.toLowerCase() === 'subject');
+  const subjectHeader = headers.find((h) => h.name.toLowerCase() === 'subject');
   return subjectHeader ? subjectHeader.value : 'No Subject';
 }
 
@@ -50,7 +73,7 @@ function extractDate(text: string): Date {
     const d = new Date(`${match[1]}-${match[2]}-${match[3]}`);
     if (!isNaN(d.getTime())) return d;
   }
-  
+
   const slashRegex = /\b(\d{1,2})[-/](\d{1,2})[-/](\d{4})\b/;
   const matchSlash = text.match(slashRegex);
   if (matchSlash) {
@@ -81,7 +104,9 @@ export class SyncService {
   /**
    * Scans connected Gmail accounts for academic deadlines, then parses and registers them.
    */
-  static async syncGmailForUser(userId: string): Promise<{ success: boolean; extracted: number }> {
+  static async syncGmailForUser(
+    userId: string,
+  ): Promise<{ success: boolean; extracted: number }> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -99,11 +124,11 @@ export class SyncService {
       let count = 0;
       const emails = await GoogleClient.fetchEmails(accessToken);
 
-      for (const email of emails) {
+      for (const email of emails as GmailMessage[]) {
         const subject = getSubject(email);
         const snippet = email.snippet || '';
         const dueDate = extractDate(snippet + ' ' + subject);
-        
+
         // Ensure due date is in the future
         if (dueDate.getTime() <= Date.now()) {
           dueDate.setDate(dueDate.getDate() + 7);
@@ -111,7 +136,11 @@ export class SyncService {
 
         // Clean/determine priority
         let priority: 'HIGH' | 'MEDIUM' | 'LOW' = 'MEDIUM';
-        if (subject.toLowerCase().includes('urgent') || subject.toLowerCase().includes('high priority') || snippet.toLowerCase().includes('urgent')) {
+        if (
+          subject.toLowerCase().includes('urgent') ||
+          subject.toLowerCase().includes('high priority') ||
+          snippet.toLowerCase().includes('urgent')
+        ) {
           priority = 'HIGH';
         }
 
@@ -163,7 +192,9 @@ export class SyncService {
   /**
    * Syncs calendar events from Google Calendar to our local deadlines table.
    */
-  static async syncCalendarForUser(userId: string): Promise<{ success: boolean; synced: number }> {
+  static async syncCalendarForUser(
+    userId: string,
+  ): Promise<{ success: boolean; synced: number }> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
     });
@@ -179,9 +210,12 @@ export class SyncService {
 
     try {
       let count = 0;
-      const events = await GoogleClient.fetchCalendarEvents(accessToken, new Date().toISOString());
+      const events = await GoogleClient.fetchCalendarEvents(
+        accessToken,
+        new Date().toISOString(),
+      );
 
-      for (const event of events) {
+      for (const event of events as GoogleCalendarEvent[]) {
         if (!event.id) continue;
 
         const existing = await prisma.deadline.findUnique({
@@ -217,13 +251,19 @@ export class SyncService {
   /**
    * Pushes a specific deadline to Google Calendar.
    */
-  static async pushDeadlineToGoogleCalendar(deadlineId: string): Promise<string | null> {
+  static async pushDeadlineToGoogleCalendar(
+    deadlineId: string,
+  ): Promise<string | null> {
     const deadline = await prisma.deadline.findUnique({
       where: { id: deadlineId },
-      include: { owner: true }
+      include: { owner: true },
     });
 
-    if (!deadline || !deadline.syncToCalendar || !deadline.owner.googleAccessToken) {
+    if (
+      !deadline ||
+      !deadline.syncToCalendar ||
+      !deadline.owner.googleAccessToken
+    ) {
       return null;
     }
 
@@ -232,18 +272,24 @@ export class SyncService {
 
     try {
       if (deadline.googleEventId) {
-        await GoogleClient.deleteCalendarEvent(accessToken, deadline.googleEventId).catch(() => {});
+        await GoogleClient.deleteCalendarEvent(
+          accessToken,
+          deadline.googleEventId,
+        ).catch(() => {});
       }
 
       const startTime = new Date(deadline.dueDate);
       const endTime = new Date(startTime.getTime() + 60 * 60 * 1000); // 1 hour duration
 
-      const googleEventId = await GoogleClient.createCalendarEvent(accessToken, {
-        title: deadline.title,
-        startTime,
-        endTime,
-        description: deadline.description || 'CHRIST Faculty deadline event',
-      });
+      const googleEventId = await GoogleClient.createCalendarEvent(
+        accessToken,
+        {
+          title: deadline.title,
+          startTime,
+          endTime,
+          description: deadline.description || 'CHRIST Faculty deadline event',
+        },
+      );
 
       if (googleEventId) {
         await prisma.deadline.update({
@@ -262,7 +308,10 @@ export class SyncService {
   /**
    * Deletes a deadline from Google Calendar.
    */
-  static async deleteDeadlineFromGoogleCalendar(ownerId: string, googleEventId: string): Promise<boolean> {
+  static async deleteDeadlineFromGoogleCalendar(
+    ownerId: string,
+    googleEventId: string,
+  ): Promise<boolean> {
     const accessToken = await getOrRefreshAccessToken(ownerId);
     if (!accessToken) return false;
 

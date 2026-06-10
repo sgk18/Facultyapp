@@ -7,10 +7,10 @@ import { prisma } from '@/lib/prisma';
 
 export const GET = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
-  
+
   const { searchParams } = new URL(req.url);
   const departmentId = searchParams.get('departmentId') || undefined;
-  
+
   const pageStr = searchParams.get('page');
   if (pageStr) {
     const page = parseInt(pageStr, 10) || 1;
@@ -42,15 +42,18 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       prisma.deadline.count({ where: whereClause }),
     ]);
 
-    return sendSuccess({
-      items: deadlines,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      }
-    }, 'Deadlines retrieved successfully');
+    return sendSuccess(
+      {
+        items: deadlines,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+      'Deadlines retrieved successfully',
+    );
   }
 
   const deadlines = await DeadlineService.listDeadlines(user);
@@ -61,14 +64,14 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
   const body = await req.json();
   const result = deadlineSchema.safeParse(body);
-  
+
   if (!result.success) {
     throw new ValidationError(
       'Validation failed',
-      result.error.errors.map((e) => e.message)
+      result.error.errors.map((e) => e.message),
     );
   }
-  
+
   const deadline = await DeadlineService.createDeadline(result.data, user);
   return sendSuccess(deadline, 'Deadline created successfully', 201);
 });

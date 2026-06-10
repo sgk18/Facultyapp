@@ -48,7 +48,7 @@ export class InternalServerError extends AppError {
  * Formats API errors matching the { success: false, error: string, details: [] } payload rules.
  */
 export function withErrorHandler(
-  handler: (req: any, ctx: any) => Promise<NextResponse>
+  handler: (req: any, ctx: any) => Promise<NextResponse>,
 ) {
   return async (req: any, ctx: any) => {
     try {
@@ -63,7 +63,7 @@ export function withErrorHandler(
             error: error.message,
             details: error.details,
           },
-          { status: error.statusCode }
+          { status: error.statusCode },
         );
       }
 
@@ -72,9 +72,11 @@ export function withErrorHandler(
         {
           success: false,
           error: 'An unexpected error occurred',
-          details: [error.message || 'Internal Server Error'],
+          details: [
+            error instanceof Error ? error.message : 'Internal Server Error',
+          ],
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
   };
@@ -83,13 +85,13 @@ export function withErrorHandler(
 /**
  * Formats success API payloads matching the { success: true, data: {}, message: "" } rules.
  */
-export function sendSuccess(data: any, message = 'Success', status = 200) {
+export function sendSuccess(data: unknown, message = 'Success', status = 200) {
   return NextResponse.json(
     {
       success: true,
       data,
       message,
     },
-    { status }
+    { status },
   );
 }

@@ -16,7 +16,7 @@ export function formatErrorResponse(error: any): NextResponse {
         error: error.message,
         details: error.details,
       },
-      { status: error.statusCode }
+      { status: error.statusCode },
     );
   }
 
@@ -24,8 +24,10 @@ export function formatErrorResponse(error: any): NextResponse {
     {
       success: false,
       error: 'An unexpected error occurred',
-      details: [error.message || 'Internal Server Error'],
+      details: [
+        error instanceof Error ? error.message : 'Internal Server Error',
+      ],
     },
-    { status: 500 }
+    { status: 500 },
   );
 }

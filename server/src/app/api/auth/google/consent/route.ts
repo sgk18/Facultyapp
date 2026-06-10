@@ -14,15 +14,21 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   });
 
   if (!userRecord || !userRecord.googleId) {
-    return sendSuccess({ connected: false, syncGmail: false, syncCalendar: false }, 'Google account not connected');
+    return sendSuccess(
+      { connected: false, syncGmail: false, syncCalendar: false },
+      'Google account not connected',
+    );
   }
 
-  return sendSuccess({
-    connected: true,
-    syncGmail: userRecord.gmailSyncEnabled,
-    syncCalendar: userRecord.calendarSyncEnabled,
-    connectedAt: userRecord.createdAt,
-  }, 'Consent status retrieved');
+  return sendSuccess(
+    {
+      connected: true,
+      syncGmail: userRecord.gmailSyncEnabled,
+      syncCalendar: userRecord.calendarSyncEnabled,
+      connectedAt: userRecord.createdAt,
+    },
+    'Consent status retrieved',
+  );
 });
 
 /**
@@ -32,8 +38,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const user = await requireAuth(req);
   const body = await req.json();
 
-  if (typeof body.syncGmail !== 'boolean' || typeof body.syncCalendar !== 'boolean') {
-    throw new ValidationError('syncGmail and syncCalendar must be boolean fields');
+  if (
+    typeof body.syncGmail !== 'boolean' ||
+    typeof body.syncCalendar !== 'boolean'
+  ) {
+    throw new ValidationError(
+      'syncGmail and syncCalendar must be boolean fields',
+    );
   }
 
   const userRecord = await prisma.user.findUnique({
@@ -41,7 +52,9 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   });
 
   if (!userRecord || !userRecord.googleId) {
-    throw new ValidationError('Google account is not connected. Connect via OAuth first.');
+    throw new ValidationError(
+      'Google account is not connected. Connect via OAuth first.',
+    );
   }
 
   const updated = await prisma.user.update({
@@ -52,10 +65,13 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
-  return sendSuccess({
-    syncGmail: updated.gmailSyncEnabled,
-    syncCalendar: updated.calendarSyncEnabled,
-  }, 'Sync consent options updated successfully');
+  return sendSuccess(
+    {
+      syncGmail: updated.gmailSyncEnabled,
+      syncCalendar: updated.calendarSyncEnabled,
+    },
+    'Sync consent options updated successfully',
+  );
 });
 
 /**
@@ -92,5 +108,8 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
-  return sendSuccess(null, 'Google account disconnected and sync events cleaned up');
+  return sendSuccess(
+    null,
+    'Google account disconnected and sync events cleaned up',
+  );
 });

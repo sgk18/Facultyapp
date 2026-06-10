@@ -35,7 +35,7 @@ export class UserService {
       pushNotificationsEnabled?: boolean;
       inAppNotificationsEnabled?: boolean;
       reminderFrequency?: string;
-    }
+    },
   ) {
     // Verify department exists if departmentId is being updated
     if (data.departmentId) {
@@ -62,7 +62,7 @@ export class UserService {
   static async registerPushToken(
     userId: string,
     fcmToken: string,
-    platform: string
+    platform: string,
   ) {
     // Confirm the user exists first
     const userExists = await prisma.user.findUnique({ where: { id: userId } });

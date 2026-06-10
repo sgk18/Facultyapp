@@ -1,7 +1,9 @@
 import { Resend } from 'resend';
 
 const resendApiKey = process.env.RESEND_API_KEY || '';
-const fromEmail = process.env.FROM_EMAIL || 'CHRIST Faculty Hub <notifications@christuniversity.in>';
+const fromEmail =
+  process.env.FROM_EMAIL ||
+  'CHRIST Faculty Hub <notifications@christuniversity.in>';
 
 let resendInstance: Resend | null = null;
 if (resendApiKey) {
@@ -63,11 +65,15 @@ export class TemplateService {
                 <td style="padding: 4px 0; color: #4B5563;"><strong>Priority:</strong></td>
                 <td style="padding: 4px 0; color: #111827;"><span style="background-color: ${urgencyColor}15; color: ${urgencyColor}; padding: 2px 8px; border-radius: 4px; font-weight: 600; font-size: 12px;">${priority}</span></td>
               </tr>
-              ${description ? `
+              ${
+                description
+                  ? `
               <tr>
                 <td style="padding: 8px 0 0 0; color: #4B5563; vertical-align: top;"><strong>Description:</strong></td>
                 <td style="padding: 8px 0 0 0; color: #6B7280; line-height: 1.4;">${description}</td>
-              </tr>` : ''}
+              </tr>`
+                  : ''
+              }
             </table>
           </div>
           
@@ -114,9 +120,9 @@ export class ReminderEmailService {
       description,
     } = params;
 
-    let subject = '';
-    let messageText = '';
-    let urgencyColor = '#0147AD'; // Default blue
+    let subject: string;
+    let messageText: string;
+    let urgencyColor: string;
 
     // 1. Determine Subject, Tone, and Accent Color based on Days Remaining
     if (daysRemaining === 7) {
@@ -163,7 +169,7 @@ export class ReminderEmailService {
       subject = `Urgent: ${deadlineTitle} due in 6 hours`;
       messageText = `Urgent notification: Only 6 hours remaining to complete this deadline.`;
       urgencyColor = '#DC2626';
-    } else if (Math.abs(daysRemaining - 1/24) < 0.01) {
+    } else if (Math.abs(daysRemaining - 1 / 24) < 0.01) {
       subject = `Final Warning: ${deadlineTitle} due in 1 hour`;
       messageText = `Final warning: The deadline is in 1 hour. Action is required immediately.`;
       urgencyColor = '#B91C1C';
@@ -194,14 +200,21 @@ export class ReminderEmailService {
           subject,
           html,
         });
-        console.log(`[Resend] Successfully sent reminder email to ${to} for deadline: "${deadlineTitle}" (subject: "${subject}")`);
+        console.log(
+          `[Resend] Successfully sent reminder email to ${to} for deadline: "${deadlineTitle}" (subject: "${subject}")`,
+        );
         return true;
       } else {
-        console.log(`[MOCK EMAIL] Sent to ${to}: Subject: "${subject}", Accent: ${urgencyColor}, Message: "${messageText}"`);
+        console.log(
+          `[MOCK EMAIL] Sent to ${to}: Subject: "${subject}", Accent: ${urgencyColor}, Message: "${messageText}"`,
+        );
         return true;
       }
     } catch (err) {
-      console.error(`Failed to dispatch email notification via Resend to ${to}:`, err);
+      console.error(
+        `Failed to dispatch email notification via Resend to ${to}:`,
+        err,
+      );
       return false;
     }
   }

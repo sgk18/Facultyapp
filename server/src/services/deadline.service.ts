@@ -50,7 +50,9 @@ export class DeadlineService {
     }
 
     if (deadline.ownerId !== user.id) {
-      throw new ForbiddenError('You do not have permission to view this deadline');
+      throw new ForbiddenError(
+        'You do not have permission to view this deadline',
+      );
     }
 
     return deadline;
@@ -61,7 +63,9 @@ export class DeadlineService {
    */
   static async createDeadline(input: DeadlineInput, user: AuthenticatedUser) {
     if (user.role === 'FACULTY' && input.departmentId !== user.departmentId) {
-      throw new ForbiddenError('You can only create deadlines within your own department');
+      throw new ForbiddenError(
+        'You can only create deadlines within your own department',
+      );
     }
 
     const department = await prisma.department.findUnique({
@@ -118,22 +122,27 @@ export class DeadlineService {
 
     // 2. Push to Google Calendar if requested
     if (deadline.syncToCalendar) {
-      const { SyncService } = require('./sync.service');
-      SyncService.pushDeadlineToGoogleCalendar(deadline.id).catch((err: any) => {
-        console.error('Failed to push new deadline to Google Calendar:', err);
-      });
+      const { SyncService } = await import('./sync.service');
+      SyncService.pushDeadlineToGoogleCalendar(deadline.id).catch(
+        (err: unknown) => {
+          console.error('Failed to push new deadline to Google Calendar:', err);
+        },
+      );
     }
 
     // 3. Send creation notification
-    const formattedDate = new Date(deadline.dueDate).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    });
+    const formattedDate = new Date(deadline.dueDate).toLocaleDateString(
+      'en-US',
+      {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      },
+    );
 
     await NotificationService.notifySingleUser({
       userId: user.id,
@@ -147,7 +156,10 @@ export class DeadlineService {
     });
 
     // 4. Automatically schedule reminder notifications
-    await DeadlineService.scheduleNotificationsForDeadline(deadline.id, input.reminderSettings);
+    await DeadlineService.scheduleNotificationsForDeadline(
+      deadline.id,
+      input.reminderSettings,
+    );
 
     return deadline;
   }
@@ -158,7 +170,7 @@ export class DeadlineService {
   static async updateDeadline(
     id: string,
     input: Partial<DeadlineInput>,
-    user: AuthenticatedUser
+    user: AuthenticatedUser,
   ) {
     const deadline = await prisma.deadline.findUnique({
       where: { id },
@@ -169,7 +181,9 @@ export class DeadlineService {
     }
 
     if (deadline.ownerId !== user.id) {
-      throw new ForbiddenError('You do not have permission to modify this deadline');
+      throw new ForbiddenError(
+        'You do not have permission to modify this deadline',
+      );
     }
 
     if (input.departmentId) {
@@ -181,13 +195,27 @@ export class DeadlineService {
       }
     }
 
-    const updateData: any = {};
+    const updateData: {
+      title?: string;
+      description?: string;
+      dueDate?: Date;
+      priority?: 'HIGH' | 'MEDIUM' | 'LOW';
+      departmentId?: string;
+      isCompleted?: boolean;
+      status?: string;
+      reminderEnabled?: boolean;
+      reminderTime?: Date | null;
+      syncToCalendar?: boolean;
+    } = {};
     if (input.title !== undefined) updateData.title = input.title;
-    if (input.description !== undefined) updateData.description = input.description;
-    if (input.dueDate !== undefined) updateData.dueDate = new Date(input.dueDate);
+    if (input.description !== undefined)
+      updateData.description = input.description;
+    if (input.dueDate !== undefined)
+      updateData.dueDate = new Date(input.dueDate);
     if (input.priority !== undefined) updateData.priority = input.priority;
-    if (input.departmentId !== undefined) updateData.departmentId = input.departmentId;
-    
+    if (input.departmentId !== undefined)
+      updateData.departmentId = input.departmentId;
+
     // Support completion state bridging
     if (input.isCompleted !== undefined) {
       updateData.isCompleted = input.isCompleted;
@@ -248,15 +276,26 @@ export class DeadlineService {
     const isCompleted = updatedDeadline.status === 'COMPLETED';
 
     // Push or delete from Google Calendar based on sync preference
-    const { SyncService } = require('./sync.service');
+    const { SyncService } = await import('./sync.service');
     if (updatedDeadline.syncToCalendar) {
-      SyncService.pushDeadlineToGoogleCalendar(updatedDeadline.id).catch((err: any) => {
-        console.error('Failed to push updated deadline to Google Calendar:', err);
-      });
+      SyncService.pushDeadlineToGoogleCalendar(updatedDeadline.id).catch(
+        (err: unknown) => {
+          console.error(
+            'Failed to push updated deadline to Google Calendar:',
+            err,
+          );
+        },
+      );
     } else if (deadline.googleEventId) {
       // If it was synced previously but now syncToCalendar is false, remove from Google Calendar
-      SyncService.deleteDeadlineFromGoogleCalendar(user.id, deadline.googleEventId).catch((err: any) => {
-        console.error('Failed to delete unsynced event from Google Calendar:', err);
+      SyncService.deleteDeadlineFromGoogleCalendar(
+        user.id,
+        deadline.googleEventId,
+      ).catch((err: unknown) => {
+        console.error(
+          'Failed to delete unsynced event from Google Calendar:',
+          err,
+        );
       });
       // Clear googleEventId in database
       await prisma.deadline.update({
@@ -266,15 +305,18 @@ export class DeadlineService {
     }
 
     // Notify of updates/cancellation
-    const formattedDate = new Date(updatedDeadline.dueDate).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZoneName: 'short',
-    });
+    const formattedDate = new Date(updatedDeadline.dueDate).toLocaleDateString(
+      'en-US',
+      {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZoneName: 'short',
+      },
+    );
 
     let notificationTitle = `Updated Academic Deadline: ${updatedDeadline.title}`;
     let notificationBody = `The private deadline "${updatedDeadline.title}" has been modified. New Due Date: ${formattedDate}.`;
@@ -306,8 +348,15 @@ export class DeadlineService {
           status: 'pending',
         },
       });
-    } else if (input.dueDate !== undefined || input.reminderSettings !== undefined || input.departmentId !== undefined) {
-      await DeadlineService.scheduleNotificationsForDeadline(updatedDeadline.id, input.reminderSettings || []);
+    } else if (
+      input.dueDate !== undefined ||
+      input.reminderSettings !== undefined ||
+      input.departmentId !== undefined
+    ) {
+      await DeadlineService.scheduleNotificationsForDeadline(
+        updatedDeadline.id,
+        input.reminderSettings || [],
+      );
     }
 
     return updatedDeadline;
@@ -326,13 +375,21 @@ export class DeadlineService {
     }
 
     if (deadline.ownerId !== user.id) {
-      throw new ForbiddenError('You do not have permission to delete this deadline');
+      throw new ForbiddenError(
+        'You do not have permission to delete this deadline',
+      );
     }
 
     if (deadline.googleEventId) {
-      const { SyncService } = require('./sync.service');
-      SyncService.deleteDeadlineFromGoogleCalendar(user.id, deadline.googleEventId).catch((err: any) => {
-        console.error('Failed to delete calendar event for deleted deadline:', err);
+      const { SyncService } = await import('./sync.service');
+      SyncService.deleteDeadlineFromGoogleCalendar(
+        user.id,
+        deadline.googleEventId,
+      ).catch((err: unknown) => {
+        console.error(
+          'Failed to delete calendar event for deleted deadline:',
+          err,
+        );
       });
     }
 
@@ -346,7 +403,10 @@ export class DeadlineService {
   /**
    * Automatically generates pending scheduled reminders for all channels (email, push, in_app)
    */
-  static async scheduleNotificationsForDeadline(deadlineId: string, reminderSettings?: string[]) {
+  static async scheduleNotificationsForDeadline(
+    deadlineId: string,
+    reminderSettings?: string[],
+  ) {
     try {
       const deadline = await prisma.deadline.findUnique({
         where: { id: deadlineId },
@@ -384,13 +444,25 @@ export class DeadlineService {
 
       const settings = reminderSettings || [];
       if (settings.includes('12_HOURS')) {
-        scheduledOffsets.push({ days: 0.5, label: '12_HOURS_BEFORE', ms: 12 * 60 * 60 * 1000 });
+        scheduledOffsets.push({
+          days: 0.5,
+          label: '12_HOURS_BEFORE',
+          ms: 12 * 60 * 60 * 1000,
+        });
       }
       if (settings.includes('6_HOURS')) {
-        scheduledOffsets.push({ days: 0.25, label: '6_HOURS_BEFORE', ms: 6 * 60 * 60 * 1000 });
+        scheduledOffsets.push({
+          days: 0.25,
+          label: '6_HOURS_BEFORE',
+          ms: 6 * 60 * 60 * 1000,
+        });
       }
       if (settings.includes('1_HOUR')) {
-        scheduledOffsets.push({ days: 1/24, label: '1_HOUR_BEFORE', ms: 1 * 60 * 60 * 1000 });
+        scheduledOffsets.push({
+          days: 1 / 24,
+          label: '1_HOUR_BEFORE',
+          ms: 1 * 60 * 60 * 1000,
+        });
       }
 
       const rows: any[] = [];
@@ -428,7 +500,9 @@ export class DeadlineService {
         await prisma.scheduledNotification.createMany({
           data: rows,
         });
-        console.log(`Successfully scheduled ${rows.length} reminder notifications for deadline: "${deadline.title}"`);
+        console.log(
+          `Successfully scheduled ${rows.length} reminder notifications for deadline: "${deadline.title}"`,
+        );
       }
     } catch (error) {
       console.error('Failed to schedule notifications for deadline:', error);

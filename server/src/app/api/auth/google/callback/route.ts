@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
   if (!code || !userId) {
     return new NextResponse(
       'Invalid callback request. Missing auth code or state parameters.',
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -31,7 +31,9 @@ export async function GET(req: NextRequest) {
     });
 
     if (!userExists) {
-      return new NextResponse('Internal user record not found.', { status: 404 });
+      return new NextResponse('Internal user record not found.', {
+        status: 404,
+      });
     }
 
     // 4. Update User details with googleId and enable sync toggles

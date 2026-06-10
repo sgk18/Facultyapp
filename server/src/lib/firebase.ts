@@ -17,7 +17,9 @@ if (admin.apps.length === 0) {
       });
       console.log('Firebase Admin SDK initialized successfully');
     } else {
-      console.warn('Firebase credentials missing. Running in MOCK mode for push notifications.');
+      console.warn(
+        'Firebase credentials missing. Running in MOCK mode for push notifications.',
+      );
     }
   } catch (error) {
     console.error('Failed to initialize Firebase Admin SDK:', error);
@@ -32,7 +34,7 @@ export class NotificationService {
     token: string,
     title: string,
     body: string,
-    data?: Record<string, string>
+    data?: Record<string, string>,
   ): Promise<boolean> {
     try {
       if (admin.apps.length > 0) {
@@ -44,10 +46,14 @@ export class NotificationService {
           },
           data,
         });
-        console.log(`Push notification sent successfully to token: ${token.substring(0, 10)}...`);
+        console.log(
+          `Push notification sent successfully to token: ${token.substring(0, 10)}...`,
+        );
         return true;
       } else {
-        console.log(`[MOCK PUSH] Sent to "${token.substring(0, 10)}...": "${title}" - "${body}"`);
+        console.log(
+          `[MOCK PUSH] Sent to "${token.substring(0, 10)}...": "${title}" - "${body}"`,
+        );
         return true;
       }
     } catch (error) {
@@ -63,10 +69,10 @@ export class NotificationService {
     tokens: string[],
     title: string,
     body: string,
-    data?: Record<string, string>
+    data?: Record<string, string>,
   ): Promise<number> {
     if (tokens.length === 0) return 0;
-    
+
     let successCount = 0;
     for (const token of tokens) {
       const success = await this.sendPushNotification(token, title, body, data);

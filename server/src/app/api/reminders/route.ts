@@ -1,5 +1,11 @@
 import { NextRequest } from 'next/server';
-import { withErrorHandler, sendSuccess, ValidationError, NotFoundError, ForbiddenError } from '@/utils/errors';
+import {
+  withErrorHandler,
+  sendSuccess,
+  ValidationError,
+  NotFoundError,
+  ForbiddenError,
+} from '@/utils/errors';
 import { requireAuth } from '@/middleware/auth.middleware';
 import { prisma } from '@/lib/prisma';
 
@@ -23,7 +29,9 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
         take: limit,
         orderBy: { reminderTime: 'asc' },
       }),
-      prisma.deadline.count({ where: { ownerId: user.id, reminderEnabled: true } }),
+      prisma.deadline.count({
+        where: { ownerId: user.id, reminderEnabled: true },
+      }),
     ]);
 
     const items = reminders.map((r) => ({
@@ -37,15 +45,18 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
       createdAt: r.createdAt,
     }));
 
-    return sendSuccess({
-      items,
-      pagination: {
-        page,
-        limit,
-        total,
-        pages: Math.ceil(total / limit),
-      }
-    }, 'Reminders retrieved successfully');
+    return sendSuccess(
+      {
+        items,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit),
+        },
+      },
+      'Reminders retrieved successfully',
+    );
   }
 
   const reminders = await prisma.deadline.findMany({
@@ -140,9 +151,17 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
     throw new ValidationError('id and status are required fields');
   }
 
-  const allowedStatuses = ['PENDING', 'SENT', 'DISMISSED', 'COMPLETED', 'CANCELLED'];
+  const allowedStatuses = [
+    'PENDING',
+    'SENT',
+    'DISMISSED',
+    'COMPLETED',
+    'CANCELLED',
+  ];
   if (!allowedStatuses.includes(body.status)) {
-    throw new ValidationError(`status must be one of: ${allowedStatuses.join(', ')}`);
+    throw new ValidationError(
+      `status must be one of: ${allowedStatuses.join(', ')}`,
+    );
   }
 
   const reminder = await prisma.deadline.findUnique({
@@ -159,7 +178,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
 
   const updated = await prisma.deadline.update({
     where: { id: body.id },
-    data: { 
+    data: {
       status: body.status,
       isCompleted: body.status === 'COMPLETED',
     },
@@ -205,7 +224,10 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
 
   if (reminder.googleEventId) {
     const { SyncService } = require('@/services/sync.service');
-    SyncService.deleteDeadlineFromGoogleCalendar(user.id, reminder.googleEventId).catch((err: any) => {
+    SyncService.deleteDeadlineFromGoogleCalendar(
+      user.id,
+      reminder.googleEventId,
+    ).catch((err: any) => {
       console.error('Failed to delete reminder from Google Calendar:', err);
     });
   }

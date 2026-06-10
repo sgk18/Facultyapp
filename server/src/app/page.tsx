@@ -8,7 +8,7 @@ export default function Home() {
     if (typeof window !== 'undefined') {
       const search = window.location.search;
       const hash = window.location.hash;
-      
+
       if (search.includes('code=')) {
         window.location.href = `facultyapp://auth/callback${search}`;
       } else if (hash.includes('access_token=')) {
@@ -25,9 +25,18 @@ export default function Home() {
 
         body {
           margin: 0;
-          background: radial-gradient(circle at top right, rgba(1, 71, 173, 0.06), transparent),
-                      radial-gradient(circle at bottom left, rgba(74, 132, 240, 0.06), transparent),
-                      #DCDCDC;
+          background:
+            radial-gradient(
+              circle at top right,
+              rgba(1, 71, 173, 0.06),
+              transparent
+            ),
+            radial-gradient(
+              circle at bottom left,
+              rgba(74, 132, 240, 0.06),
+              transparent
+            ),
+            #dcdcdc;
           font-family: 'Inter', sans-serif;
           color: #111827;
           overflow-x: hidden;
@@ -53,8 +62,9 @@ export default function Home() {
           max-width: 650px;
           width: 100%;
           text-align: center;
-          box-shadow: 0 20px 50px rgba(1, 71, 173, 0.05),
-                      0 0 30px rgba(1, 71, 173, 0.02);
+          box-shadow:
+            0 20px 50px rgba(1, 71, 173, 0.05),
+            0 0 30px rgba(1, 71, 173, 0.02);
           animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -70,7 +80,7 @@ export default function Home() {
           width: 46px;
           height: 46px;
           border-radius: 12px;
-          background: linear-gradient(135deg, #0147AD 0%, #4A84F0 100%);
+          background: linear-gradient(135deg, #0147ad 0%, #4a84f0 100%);
           display: flex;
           align-items: center;
           justify-content: center;
@@ -86,13 +96,13 @@ export default function Home() {
           font-size: 2.2rem;
           font-weight: 700;
           margin: 0;
-          background: linear-gradient(135deg, #0147AD 0%, #4A84F0 100%);
+          background: linear-gradient(135deg, #0147ad 0%, #4a84f0 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
-          color: #4B5563;
+          color: #4b5563;
           font-size: 1.1rem;
           margin-top: 12px;
           margin-bottom: 32px;
@@ -116,11 +126,11 @@ export default function Home() {
         .status-dot {
           width: 8px;
           height: 8px;
-          background-color: #10B981;
+          background-color: #10b981;
           border-radius: 50%;
           display: inline-block;
           animation: pulse 1.8s infinite;
-          box-shadow: 0 0 8px #10B981;
+          box-shadow: 0 0 8px #10b981;
         }
 
         .actions {
@@ -145,7 +155,7 @@ export default function Home() {
         }
 
         .btn-primary {
-          background: linear-gradient(135deg, #0147AD 0%, #4A84F0 100%);
+          background: linear-gradient(135deg, #0147ad 0%, #4a84f0 100%);
           color: white;
           border: none;
           box-shadow: 0 4px 15px rgba(1, 71, 173, 0.2);
@@ -164,12 +174,12 @@ export default function Home() {
         .btn-secondary {
           background-color: transparent;
           border: 1.5px solid rgba(1, 71, 173, 0.2);
-          color: #0147AD;
+          color: #0147ad;
         }
 
         .btn-secondary:hover {
           background-color: rgba(1, 71, 173, 0.05);
-          border-color: #0147AD;
+          border-color: #0147ad;
         }
 
         .routes-section {
@@ -181,7 +191,7 @@ export default function Home() {
         .routes-section h3 {
           font-family: 'Outfit', sans-serif;
           font-size: 1rem;
-          color: #0147AD;
+          color: #0147ad;
           margin-bottom: 16px;
           font-weight: 600;
           text-transform: uppercase;
@@ -203,18 +213,18 @@ export default function Home() {
 
         .route-path {
           font-family: monospace;
-          color: #0147AD;
+          color: #0147ad;
           font-weight: 600;
         }
 
         .route-desc {
-          color: #4B5563;
+          color: #4b5563;
         }
 
         footer {
           margin-top: 40px;
           font-size: 0.8rem;
-          color: #6B7280;
+          color: #6b7280;
         }
 
         @keyframes slideUp {
@@ -249,7 +259,9 @@ export default function Home() {
           <div className="logo-symbol">C</div>
           <h1>CHRIST Faculty App</h1>
         </div>
-        <div className="subtitle">Core REST API Server & Management Console</div>
+        <div className="subtitle">
+          Core REST API Server & Management Console
+        </div>
 
         <div className="status-badge">
           <span className="status-dot"></span>
@@ -260,7 +272,12 @@ export default function Home() {
           <Link href="/admin" className="btn btn-primary">
             Launch Admin Control Center
           </Link>
-          <a href="/api/users" className="btn btn-secondary" target="_blank" rel="noreferrer">
+          <a
+            href="/api/users"
+            className="btn btn-secondary"
+            target="_blank"
+            rel="noreferrer"
+          >
             Test API Connections
           </a>
         </div>
@@ -283,7 +300,8 @@ export default function Home() {
       </div>
 
       <footer>
-        &copy; {new Date().getFullYear()} CHRIST University. All rights reserved.
+        &copy; {new Date().getFullYear()} CHRIST University. All rights
+        reserved.
       </footer>
     </div>
   );

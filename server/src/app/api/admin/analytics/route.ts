@@ -13,22 +13,27 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     activeUsers,
     pendingDeadlines,
     upcomingEvents,
-    connectedGmailSyncs
+    connectedGmailSyncs,
   ] = await Promise.all([
     prisma.user.count({ where: { role: 'FACULTY' } }),
     prisma.user.count({ where: { role: 'HOD' } }),
     prisma.user.count({ where: { isSuspended: false } }),
     prisma.deadline.count({ where: { isCompleted: false } }),
-    prisma.deadline.count({ where: { syncToCalendar: true, dueDate: { gte: new Date() } } }),
+    prisma.deadline.count({
+      where: { syncToCalendar: true, dueDate: { gte: new Date() } },
+    }),
     prisma.user.count({ where: { gmailSyncEnabled: true } }),
   ]);
 
-  return sendSuccess({
-    totalFaculty,
-    totalHods,
-    activeUsers,
-    pendingDeadlines,
-    upcomingEvents,
-    connectedGmailSyncs,
-  }, 'Admin analytics data retrieved successfully');
+  return sendSuccess(
+    {
+      totalFaculty,
+      totalHods,
+      activeUsers,
+      pendingDeadlines,
+      upcomingEvents,
+      connectedGmailSyncs,
+    },
+    'Admin analytics data retrieved successfully',
+  );
 });

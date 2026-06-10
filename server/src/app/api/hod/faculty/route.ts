@@ -42,10 +42,13 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
-  return sendSuccess({
-    department,
-    facultyCount: facultyMembers.length,
-    faculty: facultyMembers,
-    deadlines: departmentDeadlines,
-  }, 'Department faculty and deadlines retrieved successfully');
+  return sendSuccess(
+    {
+      department,
+      facultyCount: facultyMembers.length,
+      faculty: facultyMembers,
+      deadlines: departmentDeadlines,
+    },
+    'Department faculty and deadlines retrieved successfully',
+  );
 });

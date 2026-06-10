@@ -5,7 +5,9 @@
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
-const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000/api/auth/google/callback';
+const GOOGLE_REDIRECT_URI =
+  process.env.GOOGLE_REDIRECT_URI ||
+  'http://localhost:3000/api/auth/google/callback';
 
 export interface GoogleTokens {
   accessToken: string;
@@ -51,7 +53,10 @@ export class GoogleClient {
   /**
    * Exchanges authorization code for access and refresh tokens.
    */
-  static async exchangeCodeForTokens(code: string, redirectUri?: string): Promise<GoogleTokens> {
+  static async exchangeCodeForTokens(
+    code: string,
+    redirectUri?: string,
+  ): Promise<GoogleTokens> {
     const res = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -125,15 +130,21 @@ export class GoogleClient {
   /**
    * Fetches the user's Gmail message list with a maximum limit.
    */
-  static async fetchEmails(accessToken: string, q = 'subject:(deadline OR circular OR marks OR exam OR viva OR submission)'): Promise<any[]> {
+  static async fetchEmails(
+    accessToken: string,
+    q = 'subject:(deadline OR circular OR marks OR exam OR viva OR submission)',
+  ): Promise<any[]> {
     const params = new URLSearchParams({
       maxResults: '20',
       q,
     });
 
-    const res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const res = await fetch(
+      `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
 
     if (!res.ok) {
       console.error('Failed to list Gmail messages:', await res.text());
@@ -146,15 +157,20 @@ export class GoogleClient {
     }
 
     // Resolve detailed message contents in parallel
-    const detailsPromises = listData.messages.map(async (msg: { id: string }) => {
-      const msgRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (msgRes.ok) {
-        return msgRes.json();
-      }
-      return null;
-    });
+    const detailsPromises = listData.messages.map(
+      async (msg: { id: string }) => {
+        const msgRes = await fetch(
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          },
+        );
+        if (msgRes.ok) {
+          return msgRes.json();
+        }
+        return null;
+      },
+    );
 
     const resolved = await Promise.all(detailsPromises);
     return resolved.filter((item) => item !== null);
@@ -163,7 +179,10 @@ export class GoogleClient {
   /**
    * Fetches events from Google Calendar.
    */
-  static async fetchCalendarEvents(accessToken: string, timeMinStr: string): Promise<any[]> {
+  static async fetchCalendarEvents(
+    accessToken: string,
+    timeMinStr: string,
+  ): Promise<any[]> {
     const params = new URLSearchParams({
       timeMin: timeMinStr,
       singleEvents: 'true',
@@ -171,12 +190,18 @@ export class GoogleClient {
       maxResults: '50',
     });
 
-    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params.toString()}`,
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
 
     if (!res.ok) {
-      console.error('Failed to fetch calendar events from Google:', await res.text());
+      console.error(
+        'Failed to fetch calendar events from Google:',
+        await res.text(),
+      );
       return [];
     }
 
@@ -189,7 +214,12 @@ export class GoogleClient {
    */
   static async createCalendarEvent(
     accessToken: string,
-    event: { title: string; startTime: Date; endTime: Date; description?: string }
+    event: {
+      title: string;
+      startTime: Date;
+      endTime: Date;
+      description?: string;
+    },
   ): Promise<string | null> {
     const body = {
       summary: event.title,
@@ -198,17 +228,23 @@ export class GoogleClient {
       end: { dateTime: event.endTime.toISOString() },
     };
 
-    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+    const res = await fetch(
+      'https://www.googleapis.com/calendar/v3/calendars/primary/events',
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
       },
-      body: JSON.stringify(body),
-    });
+    );
 
     if (!res.ok) {
-      console.error('Failed to push event to Google Calendar:', await res.text());
+      console.error(
+        'Failed to push event to Google Calendar:',
+        await res.text(),
+      );
       return null;
     }
 
@@ -221,17 +257,23 @@ export class GoogleClient {
    */
   static async deleteCalendarEvent(
     accessToken: string,
-    googleEventId: string
+    googleEventId: string,
   ): Promise<boolean> {
-    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
+    const res = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${googleEventId}`,
+      {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
       },
-    });
+    );
 
     if (!res.ok) {
-      console.error('Failed to delete event from Google Calendar:', await res.text());
+      console.error(
+        'Failed to delete event from Google Calendar:',
+        await res.text(),
+      );
       return false;
     }
 

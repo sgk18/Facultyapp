@@ -15,8 +15,11 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     SyncService.syncCalendarForUser(user.id),
   ]);
 
-  return sendSuccess({
-    gmail: gmailResult,
-    calendar: calendarResult,
-  }, 'Synchronization sync task completed successfully');
+  return sendSuccess(
+    {
+      gmail: gmailResult,
+      calendar: calendarResult,
+    },
+    'Synchronization sync task completed successfully',
+  );
 });

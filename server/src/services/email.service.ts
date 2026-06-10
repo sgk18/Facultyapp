@@ -9,8 +9,14 @@ export class EmailService {
     facultyName: string,
     deadlineTitle: string,
     dueDateStr: string,
-    description: string
+    description: string,
   ): Promise<boolean> {
-    return LibEmailService.sendDeadlineReminder(to, facultyName, deadlineTitle, dueDateStr, description);
+    return LibEmailService.sendDeadlineReminder(
+      to,
+      facultyName,
+      deadlineTitle,
+      dueDateStr,
+      description,
+    );
   }
 }

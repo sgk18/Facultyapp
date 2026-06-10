@@ -8,12 +8,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
   await requireAdmin(req);
 
   // 1. Fetch aggregate statistics
-  const [
-    totalCount,
-    pendingCount,
-    sentCount,
-    failedCount,
-  ] = await Promise.all([
+  const [totalCount, pendingCount, sentCount, failedCount] = await Promise.all([
     prisma.scheduledNotification.count(),
     prisma.scheduledNotification.count({ where: { status: 'pending' } }),
     prisma.scheduledNotification.count({ where: { status: 'sent' } }),
@@ -32,15 +27,33 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     inAppSent,
     inAppFailed,
   ] = await Promise.all([
-    prisma.scheduledNotification.count({ where: { channel: 'email', status: 'pending' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'email', status: 'sent' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'email', status: 'failed' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'push', status: 'pending' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'push', status: 'sent' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'push', status: 'failed' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'in_app', status: 'pending' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'in_app', status: 'sent' } }),
-    prisma.scheduledNotification.count({ where: { channel: 'in_app', status: 'failed' } }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'email', status: 'pending' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'email', status: 'sent' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'email', status: 'failed' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'push', status: 'pending' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'push', status: 'sent' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'push', status: 'failed' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'in_app', status: 'pending' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'in_app', status: 'sent' },
+    }),
+    prisma.scheduledNotification.count({
+      where: { channel: 'in_app', status: 'failed' },
+    }),
   ]);
 
   // 3. Fetch latest 50 logs for the feed
@@ -62,30 +75,33 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
-  return sendSuccess({
-    summary: {
-      total: totalCount,
-      pending: pendingCount,
-      sent: sentCount,
-      failed: failedCount,
+  return sendSuccess(
+    {
+      summary: {
+        total: totalCount,
+        pending: pendingCount,
+        sent: sentCount,
+        failed: failedCount,
+      },
+      channels: {
+        email: {
+          pending: emailPending,
+          sent: emailSent,
+          failed: emailFailed,
+        },
+        push: {
+          pending: pushPending,
+          sent: pushSent,
+          failed: pushFailed,
+        },
+        in_app: {
+          pending: inAppPending,
+          sent: inAppSent,
+          failed: inAppFailed,
+        },
+      },
+      logs,
     },
-    channels: {
-      email: {
-        pending: emailPending,
-        sent: emailSent,
-        failed: emailFailed,
-      },
-      push: {
-        pending: pushPending,
-        sent: pushSent,
-        failed: pushFailed,
-      },
-      in_app: {
-        pending: inAppPending,
-        sent: inAppSent,
-        failed: inAppFailed,
-      },
-    },
-    logs,
-  }, 'Notification analytics retrieved successfully');
+    'Notification analytics retrieved successfully',
+  );
 });

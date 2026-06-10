@@ -8,7 +8,7 @@ export class FirebaseService {
     token: string,
     title: string,
     body: string,
-    data?: Record<string, string>
+    data?: Record<string, string>,
   ): Promise<boolean> {
     return NotificationService.sendPushNotification(token, title, body, data);
   }
@@ -20,8 +20,13 @@ export class FirebaseService {
     tokens: string[],
     title: string,
     body: string,
-    data?: Record<string, string>
+    data?: Record<string, string>,
   ): Promise<number> {
-    return NotificationService.broadcastPushNotification(tokens, title, body, data);
+    return NotificationService.broadcastPushNotification(
+      tokens,
+      title,
+      body,
+      data,
+    );
   }
 }

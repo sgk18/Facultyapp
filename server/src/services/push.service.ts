@@ -8,7 +8,7 @@ export class PushNotificationService {
     userId: string,
     title: string,
     body: string,
-    data?: Record<string, any>
+    data?: Record<string, any>,
   ): Promise<boolean> {
     return OneSignalClient.sendPushNotification([userId], title, body, data);
   }
@@ -20,7 +20,7 @@ export class PushNotificationService {
     userIds: string[],
     title: string,
     body: string,
-    data?: Record<string, any>
+    data?: Record<string, any>,
   ): Promise<boolean> {
     if (userIds.length === 0) return true;
     return OneSignalClient.sendPushNotification(userIds, title, body, data);
@@ -33,10 +33,10 @@ export class ReminderPushService {
    */
   static generatePushText(
     daysRemaining: number,
-    deadlineTitle: string
+    deadlineTitle: string,
   ): { title: string; body: string } {
     let title = 'Upcoming Deadline';
-    let body = '';
+    let body: string;
 
     if (daysRemaining === 7) {
       title = 'Deadline in 1 Week';
@@ -71,7 +71,7 @@ export class ReminderPushService {
     } else if (daysRemaining === 0.25) {
       title = 'Deadline in 6 Hours';
       body = `${deadlineTitle} is due in 6 hours.`;
-    } else if (Math.abs(daysRemaining - 1/24) < 0.01) {
+    } else if (Math.abs(daysRemaining - 1 / 24) < 0.01) {
       title = 'Deadline in 1 Hour';
       body = `${deadlineTitle} is due in 1 hour.`;
     } else {
