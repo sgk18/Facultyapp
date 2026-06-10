@@ -102,6 +102,15 @@ class GoogleSyncNotifier extends StateNotifier<GoogleConsentState> {
       return false;
     }
   }
+
+  Future<bool> triggerSync() async {
+    try {
+      await _ref.read(apiClientProvider).post('/sync');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 }
 
 final googleSyncProvider = StateNotifierProvider<GoogleSyncNotifier, GoogleConsentState>((ref) {

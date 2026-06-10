@@ -74,7 +74,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
 
   // Sync new event to Google Calendar
   const { SyncService } = require('@/services/sync.service');
-  SyncService.pushDeadlineToGoogleCalendar(event.id).catch((err: any) => {
+  await SyncService.pushDeadlineToGoogleCalendar(event.id).catch((err: any) => {
     console.error('Failed to push new event to Google Calendar:', err);
   });
 
@@ -129,7 +129,7 @@ export const PATCH = withErrorHandler(async (req: NextRequest) => {
 
   // Sync updated event to Google Calendar
   const { SyncService } = require('@/services/sync.service');
-  SyncService.pushDeadlineToGoogleCalendar(updated.id).catch((err: any) => {
+  await SyncService.pushDeadlineToGoogleCalendar(updated.id).catch((err: any) => {
     console.error('Failed to push updated event to Google Calendar:', err);
   });
 
@@ -174,7 +174,7 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
 
   if (event.googleEventId) {
     const { SyncService } = require('@/services/sync.service');
-    SyncService.deleteDeadlineFromGoogleCalendar(
+    await SyncService.deleteDeadlineFromGoogleCalendar(
       user.id,
       event.googleEventId,
     ).catch((err: any) => {

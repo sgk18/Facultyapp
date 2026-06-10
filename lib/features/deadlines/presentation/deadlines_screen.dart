@@ -53,6 +53,57 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
         centerTitle: false,
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh, color: AppTheme.primary),
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              scaffoldMessenger.showSnackBar(
+                const SnackBar(
+                  content: Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      SizedBox(width: 16),
+                      Text('Syncing with Google Calendar...'),
+                    ],
+                  ),
+                  duration: Duration(days: 1),
+                ),
+              );
+
+              final success = await ref.read(googleSyncProvider.notifier).triggerSync();
+              
+              scaffoldMessenger.hideCurrentSnackBar();
+              
+              if (success) {
+                await Future.wait([
+                  ref.read(deadlinesProvider.notifier).fetchDeadlines(),
+                  ref.read(calendarEventsProvider.notifier).fetchCalendarEvents(),
+                  ref.read(remindersProvider.notifier).fetchReminders(),
+                ]);
+                
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Sync completed successfully!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } else {
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('Failed to sync. Please check your connection.'),
+                    backgroundColor: AppTheme.error,
+                  ),
+                );
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.filter_list, color: AppTheme.primary),
             onPressed: () {},
           ),
@@ -260,7 +311,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
                 return RefreshIndicator(
                   onRefresh: () => ref.read(deadlinesProvider.notifier).fetchDeadlines(),
                   child: ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                    padding: const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 88),
                     itemCount: filtered.length,
                     itemBuilder: (context, idx) {
                       final deadline = filtered[idx];

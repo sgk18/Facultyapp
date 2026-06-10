@@ -55,6 +55,18 @@ class AppTheme {
         error: error,
       ),
       scaffoldBackgroundColor: background,
+      navigationBarTheme: NavigationBarThemeData(
+        height: 64,
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        labelTextStyle: WidgetStateProperty.resolveWith((states) {
+          final isSelected = states.contains(WidgetState.selected);
+          return TextStyle(
+            fontSize: 10,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            color: isSelected ? primary : secondaryText,
+          );
+        }),
+      ),
       textTheme: GoogleFonts.outfitTextTheme().copyWith(
         displayLarge: GoogleFonts.outfit(
           fontSize: 32,
