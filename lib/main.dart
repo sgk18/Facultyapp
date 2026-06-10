@@ -45,24 +45,6 @@ void main() async {
       );
       await LocalNotificationService.initialize();
 
-      // Auto-inject test user token in development
-      try {
-        const secureStorage = FlutterSecureStorage();
-        final existingToken = await secureStorage.read(key: AppConstants.tokenKey);
-        if (existingToken == null) {
-          await secureStorage.write(
-            key: AppConstants.tokenKey,
-            value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkNWM0OTYzMC0yOGJkLTRlYTgtODY2Ny0zZjkwYzdmZGU0YjMiLCJleHAiOjE4MTI1NTM0MjIsImlhdCI6MTc4MTAxNzQyMn0.YWh3GsHKmqH9pweDKYDg37ibtYbFFkHVVUbrVSmuqsY',
-          );
-          await secureStorage.write(
-            key: AppConstants.userKey,
-            value: '{"id":"f2bc4534-2099-43a4-b860-6ad676209cb7","email":"suryachalam.vm@bsccmh.christuniversity.in","fullName":"SURYACHALAM V M","role":"ADMIN","departmentId":"fe0023c7-b54b-4be6-a8f7-42d64a74de18","departmentName":"General Faculty Department","avatarUrl":"https://lh3.googleusercontent.com/a/ACg8ocIlmTVy2MgauC4WZFDOoA-nL2eoiaFcYI4hzH35k796Zs9H1oWX=s96-c","supabaseUserId":"d5c49630-28bd-4ea8-8667-3f90c7fde4b3","employeeCode":"2540146"}',
-          );
-        }
-      } catch (e) {
-        // Silently ignore storage injection errors
-      }
-
       runApp(
         const ProviderScope(
           child: FacultyApp(),
