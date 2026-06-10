@@ -521,8 +521,24 @@ class ProfileScreen extends ConsumerWidget {
                       onPressed: syncState.isLoading
                           ? null
                           : () async {
+                              final scaffoldMessenger = ScaffoldMessenger.of(context);
                               Navigator.pop(ctx);
-                              await ref.read(googleSyncProvider.notifier).disconnect();
+                              final success = await ref.read(googleSyncProvider.notifier).disconnect();
+                              if (success) {
+                                scaffoldMessenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Google account disconnected successfully!'),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
+                              } else {
+                                scaffoldMessenger.showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Failed to disconnect Google account. Check server connection.'),
+                                    backgroundColor: AppTheme.error,
+                                  ),
+                                );
+                              }
                             },
                       child: const Text('Disconnect Google Account', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),

@@ -88,16 +88,18 @@ class GoogleSyncNotifier extends StateNotifier<GoogleConsentState> {
     }
   }
 
-  Future<void> disconnect() async {
+  Future<bool> disconnect() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       await _ref.read(apiClientProvider).delete('/auth/google/consent');
       state = GoogleConsentState(isLoading: false);
+      return true;
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Failed to disconnect Google account.',
       );
+      return false;
     }
   }
 }

@@ -100,11 +100,15 @@ export const DELETE = withErrorHandler(async (req: NextRequest) => {
     },
   });
 
-  // 2. Remove any deadlines created from Google Calendar events to keep internal db clean
-  await prisma.deadline.deleteMany({
+  // 2. Update deadlines to disable calendar sync and clear event association
+  await prisma.deadline.updateMany({
     where: {
       ownerId: user.id,
       googleEventId: { not: null },
+    },
+    data: {
+      syncToCalendar: false,
+      googleEventId: null,
     },
   });
 

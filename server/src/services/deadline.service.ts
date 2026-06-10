@@ -123,7 +123,7 @@ export class DeadlineService {
     // 2. Push to Google Calendar if requested
     if (deadline.syncToCalendar) {
       const { SyncService } = await import('./sync.service');
-      SyncService.pushDeadlineToGoogleCalendar(deadline.id).catch(
+      await SyncService.pushDeadlineToGoogleCalendar(deadline.id).catch(
         (err: unknown) => {
           console.error('Failed to push new deadline to Google Calendar:', err);
         },
@@ -278,7 +278,7 @@ export class DeadlineService {
     // Push or delete from Google Calendar based on sync preference
     const { SyncService } = await import('./sync.service');
     if (updatedDeadline.syncToCalendar) {
-      SyncService.pushDeadlineToGoogleCalendar(updatedDeadline.id).catch(
+      await SyncService.pushDeadlineToGoogleCalendar(updatedDeadline.id).catch(
         (err: unknown) => {
           console.error(
             'Failed to push updated deadline to Google Calendar:',
@@ -288,7 +288,7 @@ export class DeadlineService {
       );
     } else if (deadline.googleEventId) {
       // If it was synced previously but now syncToCalendar is false, remove from Google Calendar
-      SyncService.deleteDeadlineFromGoogleCalendar(
+      await SyncService.deleteDeadlineFromGoogleCalendar(
         user.id,
         deadline.googleEventId,
       ).catch((err: unknown) => {
@@ -382,7 +382,7 @@ export class DeadlineService {
 
     if (deadline.googleEventId) {
       const { SyncService } = await import('./sync.service');
-      SyncService.deleteDeadlineFromGoogleCalendar(
+      await SyncService.deleteDeadlineFromGoogleCalendar(
         user.id,
         deadline.googleEventId,
       ).catch((err: unknown) => {
