@@ -8,6 +8,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../deadlines/presentation/deadlines_provider.dart';
 import '../../reminders/presentation/reminders_provider.dart';
+import '../../profile/presentation/google_sync_provider.dart';
 import 'calendar_provider.dart';
 
 class CalendarScreen extends ConsumerStatefulWidget {
@@ -109,7 +110,7 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
               scaffoldMessenger.hideCurrentSnackBar();
               
               if (success) {
-                await Future.wait([
+                await Future.wait<void>([
                   ref.read(calendarEventsProvider.notifier).fetchCalendarEvents(),
                   ref.read(deadlinesProvider.notifier).fetchDeadlines(),
                   ref.read(remindersProvider.notifier).fetchReminders(),

@@ -7,6 +7,9 @@ import 'package:haptic_feedback/haptic_feedback.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../auth/presentation/auth_notifier.dart';
+import '../../calendar/presentation/calendar_provider.dart';
+import '../../reminders/presentation/reminders_provider.dart';
+import '../../profile/presentation/google_sync_provider.dart';
 import 'deadlines_provider.dart';
 
 class DeadlinesScreen extends ConsumerStatefulWidget {
@@ -81,7 +84,7 @@ class _DeadlinesScreenState extends ConsumerState<DeadlinesScreen> {
               scaffoldMessenger.hideCurrentSnackBar();
               
               if (success) {
-                await Future.wait([
+                await Future.wait<void>([
                   ref.read(deadlinesProvider.notifier).fetchDeadlines(),
                   ref.read(calendarEventsProvider.notifier).fetchCalendarEvents(),
                   ref.read(remindersProvider.notifier).fetchReminders(),
