@@ -1,7 +1,6 @@
 # CHRIST Faculty App
 
 CHRIST Faculty App is a faculty productivity and academic management platform that centralizes deadlines, notifications, scheduling, and administrative oversight for CHRIST University. The system serves Faculty, HOD, and Admin roles with role-based access controls, real-time notifications, and integrations for institutional workflows.
-
 ## Project Overview
 
 The platform addresses fragmented academic workflows by offering a single source of truth for deadlines, department coordination, and institutional communications. It provides a Flutter-based faculty experience, a Next.js backend API, and an embedded admin console for governance and analytics. The project goal is to streamline faculty operations, improve accountability, and enable secure integrations with university systems.
