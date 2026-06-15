@@ -574,3 +574,8 @@ The repository does not include explicit workflow rules. The following baseline 
 | Backend | Vercel | Uses Next.js serverless runtime |
 | Database | Supabase | Postgres + managed auth potential |
 | Flutter | Play Store/TestFlight/Web | Configure API base URL per environment |
+
+
+
+cd E:\Projects\Facultyapp
+E:\Projects\flutter\bin\flutter.bat run -d ZD222M435K

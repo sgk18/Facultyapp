@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart' as dio;
-import 'package:dio/dio.dart' show Dio, DioException, BaseOptions, InterceptorsWrapper, Response;
+import 'package:dio/dio.dart' show Dio, DioException, BaseOptions, InterceptorsWrapper, Response, LogInterceptor;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -70,6 +71,20 @@ final dioProvider = Provider<Dio>((ref) {
       },
     ),
   );
+
+  if (AppConstants.environment == 'development') {
+    dioClient.interceptors.add(
+      LogInterceptor(
+        request: true,
+        requestHeader: true,
+        requestBody: true,
+        responseHeader: false,
+        responseBody: true,
+        error: true,
+        logPrint: (obj) => debugPrint('[API] $obj'),
+      ),
+    );
+  }
 
   return dioClient;
 });

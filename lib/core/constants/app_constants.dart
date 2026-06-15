@@ -1,6 +1,12 @@
 class AppConstants {
-  // API URL - change to your deployment or local IP when testing on physical devices
-  static const String baseUrl = 'https://facultyappserver.vercel.app/api';
+  // Define environment (default to 'development' for local testing)
+  static const String environment = String.fromEnvironment('APP_ENV', defaultValue: 'development');
+
+  static const String devBaseUrl = String.fromEnvironment('DEV_API_URL', defaultValue: "http://192.168.29.157:3000");
+  static const String prodBaseUrl = String.fromEnvironment('PROD_API_URL', defaultValue: "https://facultyappserver.vercel.app");
+
+  // API URL - dynamically selected based on environment
+  static const String baseUrl = environment == 'production' ? prodBaseUrl : devBaseUrl;
 
   // Secure Storage Keys
   static const String tokenKey = 'jwt_token';
