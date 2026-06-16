@@ -128,6 +128,7 @@ export async function verifyAuth(
         return user;
       }
     }
+<<<<<<< Updated upstream
 
     // Cache failure briefly to mitigate spam
     tokenCache.set(token, {
@@ -136,6 +137,14 @@ export async function verifyAuth(
     });
   } catch (error) {
     console.error('Supabase authentication verification failed:', error);
+=======
+  } catch (error: any) {
+    if (error?.name === 'AuthApiError' || error?.message?.includes('JWT')) {
+      console.warn('Token validation failed:', error.message);
+    } else {
+      console.error('Unexpected auth verification error:', error);
+    }
+>>>>>>> Stashed changes
   }
 
   return null;

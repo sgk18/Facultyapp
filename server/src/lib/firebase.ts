@@ -23,6 +23,8 @@ if (admin.apps.length === 0) {
     }
   } catch (error) {
     console.error('Failed to initialize Firebase Admin SDK:', error);
+    // Set a flag indicating push notifications are unavailable
+    process.env.FIREBASE_DISABLED = 'true';
   }
 }
 

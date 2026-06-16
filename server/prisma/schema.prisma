@@ -36,6 +36,7 @@ model Department {
 }
 
 model User {
+<<<<<<< Updated upstream
   id                  String         @id @default(uuid()) @db.Uuid
   supabaseUserId      String         @unique @db.Uuid @map("supabase_user_id")
   email               String         @unique
@@ -64,11 +65,37 @@ model User {
   googleRefreshToken  String?        @map("google_refresh_token")
   auditLogs           AuditLog[]
   scheduledNotifications ScheduledNotification[]
+=======
+  id             String         @id @default(uuid()) @db.Uuid
+  supabaseUserId String         @unique @db.Uuid @map("supabase_user_id")
+  email          String         @unique
+  fullName       String         @map("full_name")
+  role           Role           @default(FACULTY)
+  departmentId   String         @db.Uuid @map("department_id")
+  department     Department     @relation(fields: [departmentId], references: [id])
+  avatarUrl      String?        @map("avatar_url")
+  deadlines      Deadline[]     @relation("CreatedDeadlines")
+  notifications  Notification[]
+  pushTokens     PushToken[]
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  
+  // New fields appended to the end
+  employeeCode   String?        @map("employee_code")
+  isSuspended    Boolean        @default(false) @map("is_suspended")
+  googleAccount  GoogleAccount?
+  calendarEvents CalendarEvent[]
+  reminders      Reminder[]
+  auditLogs      AuditLog[]
+  deletedAt      DateTime?      @map("deleted_at")
+>>>>>>> Stashed changes
 
+  @@index([deletedAt])
   @@map("users")
 }
 
 model Deadline {
+<<<<<<< Updated upstream
   id              String          @id @default(uuid()) @db.Uuid
   title           String
   description     String
@@ -89,7 +116,24 @@ model Deadline {
   googleEventId   String?         @unique @map("google_event_id")
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
+=======
+  id           String         @id @default(uuid()) @db.Uuid
+  title        String
+  description  String
+  dueDate      DateTime       @map("due_date")
+  priority     Priority       @default(MEDIUM)
+  createdById  String         @db.Uuid @map("created_by")
+  createdBy    User           @relation("CreatedDeadlines", fields: [createdById], references: [id], onDelete: Cascade)
+  departmentId String         @db.Uuid @map("department_id")
+  department   Department     @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  isCompleted  Boolean        @default(false) @map("is_completed")
+  notifications Notification[]
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+  deletedAt    DateTime?      @map("deleted_at")
+>>>>>>> Stashed changes
 
+  @@index([deletedAt])
   @@map("deadlines")
 }
 

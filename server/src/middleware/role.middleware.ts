@@ -16,3 +16,15 @@ export function requireRoles(
     );
   }
 }
+
+/**
+ * Asserts that the user has permission to access data for a specific department.
+ * ADMIN has global access. HOD and FACULTY can only access their own department.
+ */
+export function requireDepartmentAccess(user: AuthenticatedUser, targetDepartmentId: string): void {
+  if (user.role === 'ADMIN') return;
+  
+  if (user.departmentId !== targetDepartmentId) {
+    throw new ForbiddenError('You do not have permission to access resources outside your department');
+  }
+}

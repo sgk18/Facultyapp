@@ -137,6 +137,7 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
   const role = 'FACULTY';
 
   // Instantiate profile
+<<<<<<< Updated upstream
   dbUser = await prisma.user.create({
     data: {
       supabaseUserId: supabaseUser.id,
@@ -149,6 +150,33 @@ export const POST = withErrorHandler(async (req: NextRequest) => {
     },
     include: { department: true },
   });
+=======
+  try {
+    dbUser = await prisma.user.create({
+      data: {
+        supabaseUserId: supabaseUser.id,
+        email: normalizedEmail,
+        fullName,
+        avatarUrl,
+        role,
+        departmentId: department.id,
+      },
+      include: { department: true },
+    });
+  } catch (error: any) {
+    // Handle Prisma unique constraint violation (P2002) which occurs in race conditions
+    if (error.code === 'P2002') {
+      dbUser = await prisma.user.findFirst({
+        where: { supabaseUserId: supabaseUser.id },
+        include: { department: true },
+      });
+      if (dbUser) {
+        return sendSuccess(dbUser, 'User profile retrieved successfully (resolved race condition)');
+      }
+    }
+    throw error;
+  }
+>>>>>>> Stashed changes
 
   return sendSuccess(
     dbUser,
